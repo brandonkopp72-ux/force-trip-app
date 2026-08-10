@@ -1,4 +1,4 @@
-export function IntroPage() {
+export function IntroPage({ onAccept }) {
   return (
     <div className="page">
       <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "#5b3a86", fontWeight: 600 }}>
@@ -61,6 +61,28 @@ export function IntroPage() {
         skip what doesn't. This is here to figure out who wants what, not to force everyone into the same lines.
         Let's still fly this thing with a plan — map the mission, live the mission.
       </div>
+
+      {onAccept && (
+        <button
+          onClick={onAccept}
+          style={{
+            display: "block",
+            width: "100%",
+            marginTop: 20,
+            fontFamily: "'Oswald', sans-serif",
+            fontWeight: 700,
+            fontSize: 14,
+            color: "#fff",
+            background: "#5b3a86",
+            border: "none",
+            borderRadius: 10,
+            padding: "13px 0",
+            cursor: "pointer",
+          }}
+        >
+          Accept Mission →
+        </button>
+      )}
     </div>
   );
 }

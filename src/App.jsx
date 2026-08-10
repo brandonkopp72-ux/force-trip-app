@@ -157,7 +157,7 @@ export default function App() {
         />
       </div>
 
-      {tab === "intro" && <IntroPage />}
+      {tab === "intro" && <IntroPage onAccept={() => setTab("resources")} />}
       {tab === "resources" && <ResourcesPage onAdvance={() => setTab(ZONE_PARKS[0].id)} />}
 
       {currentPark && (
