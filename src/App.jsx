@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useIdentity } from "./hooks/useIdentity.js";
 import { useVotes } from "./hooks/useVotes.js";
 import { IdentityGate } from "./components/IdentityGate.jsx";
+import { IntroPage } from "./components/IntroPage.jsx";
 import { ParkPage } from "./components/ParkPage.jsx";
 import { RationsPage } from "./components/RationsPage.jsx";
 import { ResourcesPage } from "./components/ResourcesPage.jsx";
@@ -14,10 +15,30 @@ import { PARKS } from "./data/parks.js";
 const ZONE_PARKS = PARKS.filter((p) => !p.isDeparture);
 const DEPARTURE = PARKS.find((p) => p.isDeparture);
 
+// Fixed accent colors for the non-park tabs, matching the original F.O.R.C.E. palette.
+const STATIC_TAB_ACCENTS = {
+  intro: { accent: "#5b3a86", accentSoft: "#eee7f5" },
+  resources: { accent: "#2f5d42", accentSoft: "#e7efe6" },
+  rations: { accent: "#7a2b2b", accentSoft: "#f2e6e6" },
+  profile: { accent: "#1f4e79", accentSoft: "#e5edf5" },
+  debrief: { accent: "#8a6d1f", accentSoft: "#f3ecd8" },
+  planner: { accent: "#4a1414", accentSoft: "#f0e2e2" },
+};
+
 export default function App() {
   const { person, pin, checking, loginError, login, logout } = useIdentity();
   const votes = useVotes(person, pin);
-  const [tab, setTab] = useState("resources");
+  const [tab, setTab] = useState("intro");
+  const tabRefs = useRef({});
+  const tabRowRef = useRef(null);
+
+  // Keep the active tab scrolled to the center of the tab bar whenever it changes.
+  useEffect(() => {
+    const node = tabRefs.current[tab];
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    }
+  }, [tab]);
 
   if (checking) {
     return <div style={{ padding: 40, textAlign: "center", color: "#8a8272" }}>Loading…</div>;
@@ -48,18 +69,95 @@ export default function App() {
         </div>
       </div>
 
-      <div className="tab-row">
-        <TabButton active={tab === "resources"} onClick={() => setTab("resources")} sub="✦" label="Resources" />
+      <div className="tab-row" ref={tabRowRef}>
+        <TabButton
+          tabRefs={tabRefs}
+          id="intro"
+          active={tab === "intro"}
+          onClick={() => setTab("intro")}
+          sub="✦"
+          label="Intro"
+          accent={STATIC_TAB_ACCENTS.intro.accent}
+          accentSoft={STATIC_TAB_ACCENTS.intro.accentSoft}
+        />
+        <TabButton
+          tabRefs={tabRefs}
+          id="resources"
+          active={tab === "resources"}
+          onClick={() => setTab("resources")}
+          sub="🔗"
+          label="Resources"
+          accent={STATIC_TAB_ACCENTS.resources.accent}
+          accentSoft={STATIC_TAB_ACCENTS.resources.accentSoft}
+        />
         {ZONE_PARKS.map((p, i) => (
-          <TabButton key={p.id} active={tab === p.id} onClick={() => setTab(p.id)} sub={`ZONE ${String(i + 1).padStart(2, "0")}`} label={p.park} />
+          <TabButton
+            key={p.id}
+            tabRefs={tabRefs}
+            id={p.id}
+            active={tab === p.id}
+            onClick={() => setTab(p.id)}
+            sub={`ZONE ${String(i + 1).padStart(2, "0")}`}
+            label={p.park}
+            accent={p.accent}
+            accentSoft={p.accentSoft}
+          />
         ))}
-        <TabButton active={tab === "rations"} onClick={() => setTab("rations")} sub="🍽" label="Rations" />
-        {DEPARTURE && <TabButton active={tab === DEPARTURE.id} onClick={() => setTab(DEPARTURE.id)} sub="DEPARTURE" label={DEPARTURE.park} />}
-        <TabButton active={tab === "profile"} onClick={() => setTab("profile")} sub="👤" label="My Profile" />
-        <TabButton active={tab === "debrief"} onClick={() => setTab("debrief")} sub="🎉" label="Debrief" />
-        <TabButton active={tab === "planner"} onClick={() => setTab("planner")} sub="📊" label="Planner" />
+        <TabButton
+          tabRefs={tabRefs}
+          id="rations"
+          active={tab === "rations"}
+          onClick={() => setTab("rations")}
+          sub="🍽"
+          label="Rations"
+          accent={STATIC_TAB_ACCENTS.rations.accent}
+          accentSoft={STATIC_TAB_ACCENTS.rations.accentSoft}
+        />
+        {DEPARTURE && (
+          <TabButton
+            tabRefs={tabRefs}
+            id={DEPARTURE.id}
+            active={tab === DEPARTURE.id}
+            onClick={() => setTab(DEPARTURE.id)}
+            sub="DEPARTURE"
+            label={DEPARTURE.park}
+            accent={DEPARTURE.accent}
+            accentSoft={DEPARTURE.accentSoft}
+          />
+        )}
+        <TabButton
+          tabRefs={tabRefs}
+          id="profile"
+          active={tab === "profile"}
+          onClick={() => setTab("profile")}
+          sub="👤"
+          label="My Profile"
+          accent={STATIC_TAB_ACCENTS.profile.accent}
+          accentSoft={STATIC_TAB_ACCENTS.profile.accentSoft}
+        />
+        <TabButton
+          tabRefs={tabRefs}
+          id="debrief"
+          active={tab === "debrief"}
+          onClick={() => setTab("debrief")}
+          sub="🎉"
+          label="Debrief"
+          accent={STATIC_TAB_ACCENTS.debrief.accent}
+          accentSoft={STATIC_TAB_ACCENTS.debrief.accentSoft}
+        />
+        <TabButton
+          tabRefs={tabRefs}
+          id="planner"
+          active={tab === "planner"}
+          onClick={() => setTab("planner")}
+          sub="📊"
+          label="Planner"
+          accent={STATIC_TAB_ACCENTS.planner.accent}
+          accentSoft={STATIC_TAB_ACCENTS.planner.accentSoft}
+        />
       </div>
 
+      {tab === "intro" && <IntroPage />}
       {tab === "resources" && <ResourcesPage onAdvance={() => setTab(ZONE_PARKS[0].id)} />}
 
       {currentPark && (
@@ -95,9 +193,20 @@ export default function App() {
   );
 }
 
-function TabButton({ active, onClick, sub, label }) {
+function TabButton({ tabRefs, id, active, onClick, sub, label, accent, accentSoft }) {
   return (
-    <button className={`tab ${active ? "active" : ""}`} onClick={onClick}>
+    <button
+      ref={(node) => {
+        if (node) tabRefs.current[id] = node;
+      }}
+      className={`tab ${active ? "active" : ""}`}
+      onClick={onClick}
+      style={{
+        borderColor: active ? accent : "transparent",
+        background: active ? accentSoft : "transparent",
+        color: active ? accent : "#7a7263",
+      }}
+    >
       <div className="tab-sub">{sub}</div>
       <div className="tab-label">{label}</div>
     </button>
