@@ -1,3 +1,5 @@
+Last Updated: August 10th 2026
+
 # F.O.R.C.E. — Family Trip Preference Mapper
 
 A standalone web app (no Claude account needed) for the family to record what
@@ -12,12 +14,16 @@ Supabase, deployed on Vercel.
 2. Click **New project**.
 3. Give it a name (e.g. "force-trip"), set a database password (write it down somewhere — you won't need it day-to-day, but keep it), pick the region closest to you, click **Create new project**. Takes about a minute to spin up.
 
+
+
 ## Part B — Run the setup SQL
 
 1. In your new project, click **SQL Editor** in the left sidebar.
 2. Click **New query**.
 3. Open `supabase/setup.sql` from this project, copy the **entire file**, paste it into the SQL editor.
 4. Click **Run** (bottom right). You should see "Success. No rows returned."
+
+
 
 ## Part C — Assign the six PINs
 
@@ -40,6 +46,8 @@ Replace each `'1234'` with that person's actual PIN before running. This is the 
 2. Copy the **Project URL** (looks like `https://xxxxx.supabase.co`).
 3. Copy the **anon / public** key (a long string starting with `eyJ...`). **Do not** copy the "service_role" key — that one must never be used in this app.
 
+
+
 ## Part E — Deploy to Vercel (no GitHub required)
 
 The simplest path skips GitHub entirely using Vercel's own command-line tool:
@@ -47,33 +55,30 @@ The simplest path skips GitHub entirely using Vercel's own command-line tool:
 1. Install Node.js if you don't have it: go to **nodejs.org**, download and install the LTS version.
 2. Open a terminal (Mac: Terminal app; Windows: Command Prompt) in this project's folder.
 3. Run:
-   ```
+  ```
    npm install -g vercel
    vercel login
-   ```
+  ```
    (follow the prompts — it'll open your browser to log in/sign up, free.)
 4. Run:
-   ```
+  ```
    vercel
-   ```
+  ```
    Answer the prompts with the defaults (just press Enter) except:
-   - "Set up and deploy?" → **Y**
-   - It'll ask to link to an existing project or create one — choose **create new**, give it a name.
+  - "Set up and deploy?" → **Y**
+  - It'll ask to link to an existing project or create one — choose **create new**, give it a name.
 5. Once it finishes, it gives you a preview URL — don't share that one yet, one more step first.
 6. Run:
-   ```
+  ```
    vercel env add VITE_SUPABASE_URL
-   ```
+  ```
    Paste your Project URL when prompted, choose **Production** (and Preview + Development too, doesn't hurt).
    Then:
-   ```
-   vercel env add VITE_SUPABASE_ANON_KEY
-   ```
    Paste your anon key.
 7. Deploy the real, final version with the environment variables attached:
-   ```
+  ```
    vercel --prod
-   ```
+  ```
 8. It prints your live URL (something like `force-trip.vercel.app`). **That's the link you share with the family.**
 
 *(If you'd rather use GitHub + the Vercel website instead of the command line — e.g. because you want Claude to push future updates automatically — see "Future Changes" below.)*
@@ -90,6 +95,8 @@ The simplest path skips GitHub entirely using Vercel's own command-line tool:
 
 ---
 
+
+
 ## Local development (optional, for testing changes before deploying)
 
 ```
@@ -102,16 +109,20 @@ npm run dev
 Opens at `http://localhost:5173`.
 
 To run the classification-logic unit tests:
+
 ```
 npm test
 ```
 
 To build the production bundle locally (matches what Vercel builds):
+
 ```
 npm run build
 ```
 
 ---
+
+
 
 ## Known Limitations
 
@@ -121,13 +132,18 @@ npm run build
 - **Realtime is best-effort**: if the realtime connection drops, the small sync indicator will say so, but the app still works — the next successful save (or a manual reload) will catch things up.
 - **Top Dinner Pick / dinner_top_picks**: enforced server-side (you can't top-pick a restaurant you didn't rate "Yes"), but there's no UI yet for *changing your mind* about which restaurant was your top pick beyond picking a different one.
 
+
+
 ## Verification Needed (before the October 2026 trip)
 
 Re-check closer to departure:
+
 - Halloween Horror Nights house/show/scare-zone lineup (subject to change)
 - Whether Rock 'n' Roller Coaster's Muppets rebrand is confirmed operating
 - Jurassic Park River Adventure's refurbishment end date (currently flagged through Nov 19, 2026)
 - Fast & Furious: Hollywood Drift's construction timeline
+
+
 
 ## Future Changes — how to keep using Claude for this app
 
