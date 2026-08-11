@@ -1,12 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 
+const INTEL_WORDS = ["FLIGHTS", "LODGING", "TICKETS", "PARK INTEL", "MAPS", "CONDITIONS"];
+
 /**
  * A short, full-screen "impact frame" transition — anime/comic-style energy
  * build + headline slam, translated into FORCE's own visual language (no
  * copyrighted characters, logos, or fonts referenced or reproduced).
  *
- * Reusable for future navigation moments (e.g. "SQUAD LOCKS", "RESULTS ARE
- * IN") — just pass different primary/secondary/accent/duration values.
+ * variant="default" — the original PIN → Mission Accepted sequence.
+ * variant="dataBarrage" — adds a phase-2 flash of intel category words and
+ * small green ONLINE corner tags, for the Intro → Resources moment.
+ *
+ * Reusable for future navigation moments — just pass different
+ * primary/secondary/accent/duration/variant values.
  *
  * Respects prefers-reduced-motion with a much shorter, simpler fallback.
  */
@@ -16,6 +22,7 @@ export function MissionTransition({
   verifiedText = "IDENTITY VERIFIED",
   accent = "#3ddc84",
   duration = 1800,
+  variant = "default",
   onComplete,
 }) {
   const [reduced, setReduced] = useState(false);
@@ -37,6 +44,25 @@ export function MissionTransition({
   }, [effectiveDuration]);
 
   const speedLines = Array.from({ length: 12 });
+  const isBarrage = variant === "dataBarrage";
+
+  // Six even slots inside the 14%-36% "phase 2" window, each gets its own
+  // small keyframe block so timing stays exact (no animation-delay stacking).
+  const panelKeyframes = INTEL_WORDS.map((_, i) => {
+    const slotStart = 14 + i * 3.6;
+    const in1 = (slotStart + 1).toFixed(1);
+    const hold = (slotStart + 2.5).toFixed(1);
+    const out = (slotStart + 3.5).toFixed(1);
+    const dir = i % 2 === 0 ? -1 : 1;
+    return `
+      @keyframes mtPanel${i} {
+        0%, ${slotStart}% { opacity: 0; transform: translateX(${dir * 50}px) rotate(${dir * 6}deg); }
+        ${in1}% { opacity: 1; transform: translateX(0) rotate(0deg); }
+        ${hold}% { opacity: 1; }
+        ${out}%, 100% { opacity: 0; }
+      }
+    `;
+  });
 
   return (
     <div
@@ -102,12 +128,25 @@ export function MissionTransition({
           24% { opacity: 0; }
           100% { opacity: 0; }
         }
+        @keyframes mtRadar {
+          0%, 14% { opacity: 0; transform: rotate(0deg); }
+          20% { opacity: 0.35; }
+          69% { opacity: 0.3; transform: rotate(140deg); }
+          80%, 100% { opacity: 0; }
+        }
+        @keyframes mtOnline {
+          0%, 58% { opacity: 0; }
+          66% { opacity: 1; }
+          88% { opacity: 1; }
+          100% { opacity: 0; }
+        }
         @keyframes mtReducedFade {
           0% { opacity: 0; }
           20% { opacity: 1; }
           75% { opacity: 1; }
           100% { opacity: 0; }
         }
+        ${isBarrage ? panelKeyframes.join("\n") : ""}
       `}</style>
 
       {reduced ? (
@@ -152,6 +191,19 @@ export function MissionTransition({
             }}
           />
 
+          {isBarrage && (
+            <div
+              style={{
+                position: "absolute",
+                width: 260,
+                height: 260,
+                borderRadius: "50%",
+                border: `1px dashed ${accent}77`,
+                animation: `mtRadar ${effectiveDuration}ms linear forwards`,
+              }}
+            />
+          )}
+
           <div
             style={{
               position: "absolute",
@@ -184,6 +236,38 @@ export function MissionTransition({
             );
           })}
 
+          {isBarrage &&
+            INTEL_WORDS.map((word, i) => {
+              const positions = [
+                { top: "22%", left: "20%" },
+                { top: "18%", left: "62%" },
+                { top: "50%", left: "10%" },
+                { top: "48%", left: "72%" },
+                { top: "76%", left: "24%" },
+                { top: "74%", left: "58%" },
+              ];
+              return (
+                <div
+                  key={word}
+                  style={{
+                    position: "absolute",
+                    ...positions[i],
+                    fontFamily: "'Oswald', sans-serif",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    letterSpacing: "0.08em",
+                    color: "#fff",
+                    background: `${accent}cc`,
+                    padding: "4px 10px",
+                    borderRadius: 3,
+                    animation: `mtPanel${i} ${effectiveDuration}ms linear forwards`,
+                  }}
+                >
+                  {word}
+                </div>
+              );
+            })}
+
           <div
             style={{
               position: "absolute",
@@ -192,6 +276,39 @@ export function MissionTransition({
               animation: `mtFlash ${effectiveDuration}ms ease forwards`,
             }}
           />
+
+          {isBarrage && (
+            <>
+              <div
+                style={{
+                  position: "absolute",
+                  top: 18,
+                  left: 18,
+                  fontFamily: "'Oswald', sans-serif",
+                  fontSize: 10,
+                  letterSpacing: "0.1em",
+                  color: "#3ddc84",
+                  animation: `mtOnline ${effectiveDuration}ms ease forwards`,
+                }}
+              >
+                ● ONLINE
+              </div>
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 18,
+                  right: 18,
+                  fontFamily: "'Oswald', sans-serif",
+                  fontSize: 10,
+                  letterSpacing: "0.1em",
+                  color: "#3ddc84",
+                  animation: `mtOnline ${effectiveDuration}ms ease forwards`,
+                }}
+              >
+                ● ONLINE
+              </div>
+            </>
+          )}
 
           <div style={{ position: "relative", textAlign: "center", padding: "0 20px" }}>
             <div

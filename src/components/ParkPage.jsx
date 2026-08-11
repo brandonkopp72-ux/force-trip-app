@@ -13,7 +13,13 @@ export function ParkPage({ park, votesByItem, myName, onSetLevel, onChooseSingle
 
   return (
     <div className="page">
-      <HeroBanner accent={park.accent} title={park.park} subtitle={park.missionLog} />
+      <HeroBanner
+        accent={park.accent}
+        title={park.park}
+        subtitle={park.missionLog}
+        glowColor={park.isHHN ? "#b5292f" : undefined}
+        pulse={!!park.isHHN}
+      />
 
       {park.arrivalNote && <div className="info-note">🚗 {park.arrivalNote}</div>}
       {park.specialNote && <div className="info-note">🌙 {park.specialNote}</div>}

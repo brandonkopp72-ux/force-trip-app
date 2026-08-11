@@ -1,7 +1,12 @@
 // A shared "night sky fading into the zone's accent color" hero banner,
 // used at the top of every tab so the whole app shares one visual language
 // while each tab still feels distinct through its own accent color.
-export function HeroBanner({ accent, title, subtitle }) {
+//
+// glowColor/pulse let a specific zone (currently just HHN) reskin the glow
+// orb into a slowly breathing red "moon" without touching any other zone —
+// the orb is a plain styled div, not a raster image, so this is a safe,
+// fully responsive change (no fixed-pixel overlay to break on resize).
+export function HeroBanner({ accent, title, subtitle, glowColor = "#ffe7ad", pulse = false }) {
   return (
     <div
       style={{
@@ -13,6 +18,24 @@ export function HeroBanner({ accent, title, subtitle }) {
         background: `linear-gradient(180deg, #1f1440 0%, ${accent} 100%)`,
       }}
     >
+      {pulse && (
+        <style>{`
+          @keyframes hbMoonPulse {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+          }
+          @keyframes hbHaloPulse {
+            0%, 100% { opacity: 0.2; transform: scale(1); }
+            50% { opacity: 0.42; transform: scale(1.3); }
+          }
+          .hb-moon-core { animation: hbMoonPulse 3.2s ease-in-out infinite; }
+          .hb-moon-halo { animation: hbHaloPulse 3.2s ease-in-out infinite; }
+          @media (prefers-reduced-motion: reduce) {
+            .hb-moon-core, .hb-moon-halo { animation: none; opacity: 0.85; }
+          }
+        `}</style>
+      )}
+
       <div
         style={{
           position: "absolute",
@@ -22,7 +45,25 @@ export function HeroBanner({ accent, title, subtitle }) {
           pointerEvents: "none",
         }}
       />
+
+      {/* Outer halo — bleeds slightly into the surrounding sky */}
       <div
+        className={pulse ? "hb-moon-halo" : undefined}
+        style={{
+          position: "absolute",
+          top: 4,
+          right: 14,
+          width: 66,
+          height: 66,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${glowColor}55 0%, transparent 70%)`,
+          filter: "blur(1px)",
+        }}
+      />
+
+      {/* Moon/glow core */}
+      <div
+        className={pulse ? "hb-moon-core" : undefined}
         style={{
           position: "absolute",
           top: 16,
@@ -30,9 +71,10 @@ export function HeroBanner({ accent, title, subtitle }) {
           width: 42,
           height: 42,
           borderRadius: "50%",
-          background: "radial-gradient(circle, #ffe7ad 0%, rgba(255,231,173,0.15) 70%, transparent 100%)",
+          background: `radial-gradient(circle, ${glowColor} 0%, ${glowColor}55 55%, transparent 75%)`,
         }}
       />
+
       <svg
         style={{ position: "absolute", bottom: 0, left: 0, width: "100%", height: 42 }}
         viewBox="0 0 400 60"

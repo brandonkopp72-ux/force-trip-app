@@ -49,6 +49,21 @@ export default function App() {
     return ok;
   };
 
+  // Intro → Resources: a distinct amber "intel downlink" event, not a
+  // recolor of the login transition. nextTab fires once the animation
+  // completes, so the tab switch happens on the far side of the transmission.
+  const handleIntelDownlink = () => {
+    setActiveTransition({
+      variant: "dataBarrage",
+      primary: "INTEL ACQUIRED",
+      secondary: "MISSION RESOURCES ONLINE",
+      verifiedText: "DOWNLINK INITIATED",
+      accent: "#e8963a",
+      duration: 1700,
+      nextTab: "resources",
+    });
+  };
+
   // Keep the active tab scrolled to the center of the tab bar whenever it changes.
   useEffect(() => {
     const node = tabRefs.current[tab];
@@ -174,7 +189,7 @@ export default function App() {
         />
       </div>
 
-      {tab === "intro" && <IntroPage onAccept={() => setTab("resources")} />}
+      {tab === "intro" && <IntroPage onAccept={handleIntelDownlink} />}
       {tab === "resources" && <ResourcesPage onAdvance={() => setTab(ZONE_PARKS[0].id)} />}
 
       {currentPark && (
@@ -208,7 +223,14 @@ export default function App() {
       {tab === "planner" && <PlannerView votesByItem={votes.votesByItem} />}
 
       {activeTransition && (
-        <MissionTransition {...activeTransition} onComplete={() => setActiveTransition(null)} />
+        <MissionTransition
+          {...activeTransition}
+          onComplete={() => {
+            const next = activeTransition.nextTab;
+            setActiveTransition(null);
+            if (next) setTab(next);
+          }}
+        />
       )}
     </div>
   );

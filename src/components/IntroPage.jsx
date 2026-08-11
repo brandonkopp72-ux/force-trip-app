@@ -84,7 +84,7 @@ export function IntroPage({ onAccept }) {
             cursor: "pointer",
           }}
         >
-          Accept Mission →
+          Intel Downlink →
         </button>
       )}
     </div>
