@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useIdentity } from "./hooks/useIdentity.js";
 import { useVotes } from "./hooks/useVotes.js";
 import { IdentityGate } from "./components/IdentityGate.jsx";
+import { MissionTransition } from "./components/MissionTransition.jsx";
 import { IntroPage } from "./components/IntroPage.jsx";
 import { ParkPage } from "./components/ParkPage.jsx";
 import { RationsPage } from "./components/RationsPage.jsx";
@@ -29,8 +30,24 @@ export default function App() {
   const { person, pin, checking, loginError, login, logout } = useIdentity();
   const votes = useVotes(person, pin);
   const [tab, setTab] = useState("intro");
+  const [activeTransition, setActiveTransition] = useState(null);
   const tabRefs = useRef({});
   const tabRowRef = useRef(null);
+
+  // Login always resolves exactly as before — the transition is layered on
+  // AFTER a successful PIN check, never used to fake or delay authentication.
+  const handleLogin = async (name, enteredPin) => {
+    const ok = await login(name, enteredPin);
+    if (ok) {
+      setActiveTransition({
+        primary: "MISSION ACCEPTED",
+        secondary: "FORCE TRAVEL COMMAND",
+        accent: "#3ddc84",
+        duration: 1800,
+      });
+    }
+    return ok;
+  };
 
   // Keep the active tab scrolled to the center of the tab bar whenever it changes.
   useEffect(() => {
@@ -45,7 +62,7 @@ export default function App() {
   }
 
   if (!person) {
-    return <IdentityGate onLogin={login} loginError={loginError} />;
+    return <IdentityGate onLogin={handleLogin} loginError={loginError} />;
   }
 
   const initials = person.slice(0, 2).toUpperCase();
@@ -189,6 +206,10 @@ export default function App() {
       {tab === "profile" && <MissionProfilePage myName={person} votesByItem={votes.votesByItem} />}
       {tab === "debrief" && <FamilyDebriefPage votesByItem={votes.votesByItem} />}
       {tab === "planner" && <PlannerView votesByItem={votes.votesByItem} />}
+
+      {activeTransition && (
+        <MissionTransition {...activeTransition} onComplete={() => setActiveTransition(null)} />
+      )}
     </div>
   );
 }
