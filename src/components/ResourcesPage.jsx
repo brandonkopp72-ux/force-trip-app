@@ -1,3 +1,4 @@
+import { HeroBanner } from "./HeroBanner.jsx";
 import { PARKS } from "../data/parks.js";
 import { YOUTUBE_CHANNELS } from "../data/resources.js";
 
@@ -6,7 +7,7 @@ export function ResourcesPage({ onAdvance }) {
 
   return (
     <div className="page">
-      <div className="section-title">🔗 Mission Resources</div>
+      <HeroBanner accent="#2f5d42" title="Mission Resources" subtitle="Scope out the objective theater before you vote" />
 
       <div className="card">
         <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, marginBottom: 8 }}>

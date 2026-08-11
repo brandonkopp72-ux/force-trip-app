@@ -1,3 +1,4 @@
+import { HeroBanner } from "./HeroBanner.jsx";
 import { classifyAllParks, classifyDining } from "../lib/tripStats.js";
 
 const BADGE_CLASS = {
@@ -53,7 +54,7 @@ export function FamilyDebriefPage({ votesByItem }) {
 
   return (
     <div className="page">
-      <div className="section-title">🎉 Mission Debrief</div>
+      <HeroBanner accent="#8a6d1f" title="Mission Debrief" subtitle="Not a scoreboard — a planning summary" />
       <p style={{ fontSize: 13, color: "#6b6455" }}>
         This isn't a scoreboard — a small group loving something isn't a loss, it's a great split-mission
         opportunity.

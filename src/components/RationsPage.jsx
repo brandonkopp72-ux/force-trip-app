@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { HeroBanner } from "./HeroBanner.jsx";
 import { PreferenceCard } from "./PreferenceCard.jsx";
 import { DINING_SITDOWN, DINING_QUICK, DINING_DESSERT } from "../data/dining.js";
 import { DINING_LABELS } from "../data/uiLabels.js";
@@ -16,7 +17,7 @@ export function RationsPage({ votesByItem, myName, onSetLevel, topPicks, onSetTo
 
   return (
     <div className="page">
-      <div className="section-title">🍽️ Rations</div>
+      <HeroBanner accent="#7a2b2b" title="Rations" subtitle="Vote on dining, no matter which night it lands on" />
 
       <div className="card" style={{ background: "#f3ecd8", borderColor: "#d8c088" }}>
         <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: 13, marginBottom: 3 }}>

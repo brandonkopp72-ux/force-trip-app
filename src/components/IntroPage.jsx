@@ -1,6 +1,10 @@
+import { HeroBanner } from "./HeroBanner.jsx";
+
 export function IntroPage({ onAccept }) {
   return (
     <div className="page">
+      <HeroBanner accent="#5b3a86" title="F.O.R.C.E." subtitle="Family Of Rebels Creating Experiences" />
+
       <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "#5b3a86", fontWeight: 600 }}>
         Transmission incoming...
       </div>

@@ -1,6 +1,7 @@
 import { PreferenceCard } from "./PreferenceCard.jsx";
 import { SingleChoiceGroup } from "./SingleChoiceGroup.jsx";
 import { ProgressIndicator } from "./ProgressIndicator.jsx";
+import { HeroBanner } from "./HeroBanner.jsx";
 import { RIDE_LABELS, HHN_LABELS } from "../data/uiLabels.js";
 
 export function ParkPage({ park, votesByItem, myName, onSetLevel, onChooseSingle, onAdvance, advanceLabel }) {
@@ -12,13 +13,7 @@ export function ParkPage({ park, votesByItem, myName, onSetLevel, onChooseSingle
 
   return (
     <div className="page">
-      {park.missionLog && <div style={{ fontStyle: "italic", fontSize: 12.5, color: "#6b6455", marginBottom: 8 }}>"{park.missionLog}"</div>}
-      <div
-        className="card"
-        style={{ borderColor: park.accent, background: park.accentSoft, color: park.accent, fontFamily: "'Oswald', sans-serif", fontWeight: 700 }}
-      >
-        {park.park}
-      </div>
+      <HeroBanner accent={park.accent} title={park.park} subtitle={park.missionLog} />
 
       {park.arrivalNote && <div className="info-note">🚗 {park.arrivalNote}</div>}
       {park.specialNote && <div className="info-note">🌙 {park.specialNote}</div>}
@@ -27,7 +22,17 @@ export function ParkPage({ park, votesByItem, myName, onSetLevel, onChooseSingle
           href={park.learnMoreUrl}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ display: "inline-block", fontSize: 11.5, fontWeight: 600, color: park.accent, border: `1px solid ${park.accent}`, borderRadius: 8, padding: "5px 10px", textDecoration: "none", marginBottom: 10 }}
+          style={{
+            display: "inline-block",
+            fontSize: 11.5,
+            fontWeight: 600,
+            color: park.accent,
+            border: `1px solid ${park.accent}`,
+            borderRadius: 8,
+            padding: "5px 10px",
+            textDecoration: "none",
+            marginBottom: 10,
+          }}
         >
           {park.learnMoreLabel || "Learn more"} ↗
         </a>

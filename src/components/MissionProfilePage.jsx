@@ -1,3 +1,4 @@
+import { HeroBanner } from "./HeroBanner.jsx";
 import { buildPersonalProfile, buildSquadOverlaps } from "../lib/tripStats.js";
 
 export function MissionProfilePage({ myName, votesByItem }) {
@@ -7,7 +8,7 @@ export function MissionProfilePage({ myName, votesByItem }) {
 
   return (
     <div className="page">
-      <div className="section-title">{myName.toUpperCase()}'S MISSION PROFILE</div>
+      <HeroBanner accent="#1f4e79" title={`${myName.toUpperCase()}'S MISSION PROFILE`} subtitle="Your personal stats and squad matches" />
 
       <div className="card">
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 16px", fontSize: 14 }}>

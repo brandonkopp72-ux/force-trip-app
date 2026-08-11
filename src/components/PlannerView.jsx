@@ -1,3 +1,4 @@
+import { HeroBanner } from "./HeroBanner.jsx";
 import { classifyAllParks, buildCompletionStatus } from "../lib/tripStats.js";
 import { computeNaturalSquadOverlap } from "../lib/classification.js";
 import { getAllVotableRideItems } from "../data/parks.js";
@@ -35,10 +36,7 @@ export function PlannerView({ votesByItem }) {
 
   return (
     <div className="page">
-      <div className="section-title">📊 Planner View</div>
-      <p style={{ fontSize: 12.5, color: "#8a8272", fontStyle: "italic" }}>
-        Analytical view — interprets preferences, doesn't build a schedule.
-      </p>
+      <HeroBanner accent="#4a1414" title="Planner View" subtitle="Interprets preferences, doesn't build a schedule" />
 
       <div className="card">
         <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, marginBottom: 8 }}>Completion Status</div>
