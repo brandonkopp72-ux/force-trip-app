@@ -75,10 +75,9 @@ export function StarfieldCrawl({ children }) {
           <div
             style={{
               position: "absolute",
-              left: "50%",
+              left: "9%",
               bottom: 0,
               width: "82%",
-              transform: "translateX(-50%)",
               animation: `crawlScroll ${CRAWL_DURATION_S}s linear forwards`,
             }}
           >
