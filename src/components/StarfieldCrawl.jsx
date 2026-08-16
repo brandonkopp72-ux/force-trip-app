@@ -4,21 +4,15 @@ const STAR_COUNT = 80;
 const CRAWL_DURATION_S = 42;
 
 /**
- * A contained (not full-screen) starfield with a receding 3D text crawl —
- * built entirely from CSS transforms, no video/canvas/external assets.
- * Plays once automatically; the actual call-to-action button lives outside
- * this component and is never blocked by the animation.
+ * Contained Star-Wars-style crawl.
  *
- * Technique note: the animated element is a FIXED-SIZE wrapper matching the
- * visible box (not the tall, variable-height text block itself). The text
- * sits bottom-anchored inside that wrapper and naturally overflows upward
- * as needed. Because the wrapper's own height never changes, its
- * `transformOrigin` percentage always lands on the same physical point on
- * screen — a genuine, predictable vanishing point — regardless of how long
- * the crawl text ends up being. Earlier attempts animated either the text
- * block's own transform (whose height varies with content) or its `top`
- * position alone (no shrink at all); both produced a flat scroll instead
- * of real convergence.
+ * The important geometry is:
+ *   viewport/camera (perspective)
+ *     -> fixed tilted plane (rotateX)
+ *       -> text track moving upward on that plane
+ *
+ * Do NOT animate scale() on the whole crawl. Real perspective makes text
+ * naturally shrink and converge as it travels farther up the tilted plane.
  */
 export function StarfieldCrawl({ children }) {
   const [reduced, setReduced] = useState(false);
@@ -53,11 +47,21 @@ export function StarfieldCrawl({ children }) {
     >
       {!reduced && (
         <style>{`
-          @keyframes starTwinkle { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
-          @keyframes crawlConverge {
-            0% { transform: translateY(180%) scale(1) rotateX(18deg); opacity: 1; }
-            80% { opacity: 1; }
-            100% { transform: translateY(-42%) scale(0.12) rotateX(18deg); opacity: 0; }
+          @keyframes starTwinkle {
+            0%, 100% { opacity: 0.25; }
+            50% { opacity: 1; }
+          }
+
+          @keyframes crawlTravel {
+            0% {
+              transform: translate3d(0, 0, 0);
+              opacity: 1;
+            }
+            84% { opacity: 1; }
+            100% {
+              transform: translate3d(0, calc(-100% - 620px), 0);
+              opacity: 0;
+            }
           }
         `}</style>
       )}
@@ -82,16 +86,59 @@ export function StarfieldCrawl({ children }) {
       {reduced ? (
         <div style={{ position: "relative" }}>{children}</div>
       ) : (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            transformOrigin: "50% 30%",
-            animation: `crawlConverge ${CRAWL_DURATION_S}s linear forwards`,
-          }}
-        >
-          <div style={{ position: "absolute", bottom: 0, left: "9%", width: "82%" }}>{children}</div>
-        </div>
+        <>
+          {/* CAMERA: perspective belongs here, outside the tilted crawl plane. */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              perspective: 430,
+              perspectiveOrigin: "50% 28%",
+              overflow: "hidden",
+            }}
+          >
+            {/* PLANE: fixed tilt. The text moves on this plane. */}
+            <div
+              style={{
+                position: "absolute",
+                left: "7%",
+                width: "86%",
+                top: "32%",
+                height: "180%",
+                transformOrigin: "50% 0%",
+                transform: "rotateX(25deg)",
+                transformStyle: "preserve-3d",
+              }}
+            >
+              {/* TRACK: starts below the viewport and travels toward the horizon. */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "72%",
+                  left: 0,
+                  width: "100%",
+                  animation: `crawlTravel ${CRAWL_DURATION_S}s linear forwards`,
+                  willChange: "transform, opacity",
+                  backfaceVisibility: "hidden",
+                }}
+              >
+                {children}
+              </div>
+            </div>
+          </div>
+
+          {/* Soft horizon fade: makes the crawl disappear into the vanishing zone. */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              pointerEvents: "none",
+              background:
+                "linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.96) 7%, rgba(0,0,0,0.65) 16%, rgba(0,0,0,0) 34%)",
+            }}
+          />
+        </>
       )}
     </div>
   );
