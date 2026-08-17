@@ -3,7 +3,7 @@ import { useIdentity } from "./hooks/useIdentity.js";
 import { useVotes } from "./hooks/useVotes.js";
 import { IdentityGate } from "./components/IdentityGate.jsx";
 import { MissionTransition } from "./components/MissionTransition.jsx";
-import { IntroPage } from "./components/IntroPage.jsx";
+import { CinematicIntro } from "./components/CinematicIntro.jsx";
 import { ParkPage } from "./components/ParkPage.jsx";
 import { RationsPage } from "./components/RationsPage.jsx";
 import { ResourcesPage } from "./components/ResourcesPage.jsx";
@@ -17,8 +17,8 @@ const ZONE_PARKS = PARKS.filter((p) => !p.isDeparture);
 const DEPARTURE = PARKS.find((p) => p.isDeparture);
 
 // Fixed accent colors for the non-park tabs, matching the original F.O.R.C.E. palette.
+// "intro" removed — CinematicIntro now owns that role pre-briefing, not a revisitable tab.
 const STATIC_TAB_ACCENTS = {
-  intro: { accent: "#5b3a86", accentSoft: "#eee7f5" },
   resources: { accent: "#2f5d42", accentSoft: "#e7efe6" },
   rations: { accent: "#7a2b2b", accentSoft: "#f2e6e6" },
   profile: { accent: "#1f4e79", accentSoft: "#e5edf5" },
@@ -29,38 +29,64 @@ const STATIC_TAB_ACCENTS = {
 export default function App() {
   const { person, pin, checking, loginError, login, logout } = useIdentity();
   const votes = useVotes(person, pin);
-  const [tab, setTab] = useState("intro");
+  const [tab, setTab] = useState("resources");
+
+  // Coarse experience state — App owns ONLY where the user is in the overall
+  // flow. CinematicIntro owns all of its own internal animation timing.
+  //   "login"     -> IdentityGate
+  //   "cinematic" -> CinematicIntro overlay (briefing content already mounted underneath)
+  //   "briefing"  -> Resources tab active, all other navigation locked
+  //   "planning"  -> normal, unrestricted tab navigation
+  const [experiencePhase, setExperiencePhase] = useState("login");
+  const [cinematicMounted, setCinematicMounted] = useState(false);
   const [activeTransition, setActiveTransition] = useState(null);
+
   const tabRefs = useRef({});
   const tabRowRef = useRef(null);
 
-  // Login always resolves exactly as before — the transition is layered on
-  // AFTER a successful PIN check, never used to fake or delay authentication.
+  // Login always resolves exactly as before. On success we now move straight
+  // into the cinematic — no Mission Accepted here anymore; that moved to the
+  // end of the briefing (see handleAcceptMission).
   const handleLogin = async (name, enteredPin) => {
     const ok = await login(name, enteredPin);
     if (ok) {
-      setActiveTransition({
-        primary: "MISSION ACCEPTED",
-        secondary: "FORCE TRAVEL COMMAND",
-        accent: "#3ddc84",
-        duration: 1800,
-      });
+      setExperiencePhase("cinematic");
+      setCinematicMounted(true);
     }
     return ok;
   };
 
-  // Intro → Resources: a distinct amber "intel downlink" event, not a
-  // recolor of the login transition. nextTab fires once the animation
-  // completes, so the tab switch happens on the far side of the transmission.
-  const handleIntelDownlink = () => {
+  // Force the tab to Resources the moment briefing begins, and keep it there
+  // for as long as briefing is active (see TabButton onClick guards below).
+  useEffect(() => {
+    if (experiencePhase === "briefing") {
+      setTab("resources");
+    }
+  }, [experiencePhase]);
+
+  // Called by CinematicIntro the instant its CTA is clicked — briefing
+  // content becomes the active phase right away, while the cinematic itself
+  // is still fading out on top (see onExitComplete below).
+  const handleProceedToBriefing = () => {
+    setExperiencePhase("briefing");
+  };
+
+  // Called by CinematicIntro only once its own exit-fade transition has
+  // genuinely finished — safe to unmount the overlay now.
+  const handleCinematicExitComplete = () => {
+    setCinematicMounted(false);
+  };
+
+  // The former ResourcesPage terminal action ("Review Mission Objectives →")
+  // becomes Accept Mission — this is now the ONLY way past the briefing.
+  const handleAcceptMission = () => {
+    if (activeTransition) return; // re-entrancy guard
     setActiveTransition({
-      variant: "dataBarrage",
-      primary: "INTEL ACQUIRED",
-      secondary: "MISSION RESOURCES ONLINE",
-      verifiedText: "DOWNLINK INITIATED",
-      accent: "#e8963a",
-      duration: 1700,
-      nextTab: "resources",
+      primary: "MISSION ACCEPTED",
+      secondary: "FORCE TRAVEL COMMAND",
+      accent: "#3ddc84",
+      duration: 1800,
+      nextTab: ZONE_PARKS[0].id,
     });
   };
 
@@ -83,6 +109,14 @@ export default function App() {
   const initials = person.slice(0, 2).toUpperCase();
   const currentPark = PARKS.find((p) => p.id === tab);
 
+  // Navigation is locked to Resources for the whole briefing phase — the
+  // only way through is Accept Mission at the bottom of that page.
+  const navigationLocked = experiencePhase === "briefing";
+  const guardedSetTab = (id) => {
+    if (navigationLocked) return;
+    setTab(id);
+  };
+
   return (
     <div className="app-shell">
       <div className="header">
@@ -101,22 +135,12 @@ export default function App() {
         </div>
       </div>
 
-      <div className="tab-row" ref={tabRowRef}>
-        <TabButton
-          tabRefs={tabRefs}
-          id="intro"
-          active={tab === "intro"}
-          onClick={() => setTab("intro")}
-          sub="✦"
-          label="Intro"
-          accent={STATIC_TAB_ACCENTS.intro.accent}
-          accentSoft={STATIC_TAB_ACCENTS.intro.accentSoft}
-        />
+      <div className="tab-row" ref={tabRowRef} style={{ opacity: navigationLocked ? 0.6 : 1 }}>
         <TabButton
           tabRefs={tabRefs}
           id="resources"
           active={tab === "resources"}
-          onClick={() => setTab("resources")}
+          onClick={() => guardedSetTab("resources")}
           sub="🔗"
           label="Resources"
           accent={STATIC_TAB_ACCENTS.resources.accent}
@@ -128,7 +152,8 @@ export default function App() {
             tabRefs={tabRefs}
             id={p.id}
             active={tab === p.id}
-            onClick={() => setTab(p.id)}
+            onClick={() => guardedSetTab(p.id)}
+            disabled={navigationLocked}
             sub={`ZONE ${String(i + 1).padStart(2, "0")}`}
             label={p.park}
             accent={p.accent}
@@ -139,7 +164,8 @@ export default function App() {
           tabRefs={tabRefs}
           id="rations"
           active={tab === "rations"}
-          onClick={() => setTab("rations")}
+          onClick={() => guardedSetTab("rations")}
+          disabled={navigationLocked}
           sub="🍽"
           label="Rations"
           accent={STATIC_TAB_ACCENTS.rations.accent}
@@ -150,7 +176,8 @@ export default function App() {
             tabRefs={tabRefs}
             id={DEPARTURE.id}
             active={tab === DEPARTURE.id}
-            onClick={() => setTab(DEPARTURE.id)}
+            onClick={() => guardedSetTab(DEPARTURE.id)}
+            disabled={navigationLocked}
             sub="DEPARTURE"
             label={DEPARTURE.park}
             accent={DEPARTURE.accent}
@@ -161,7 +188,8 @@ export default function App() {
           tabRefs={tabRefs}
           id="profile"
           active={tab === "profile"}
-          onClick={() => setTab("profile")}
+          onClick={() => guardedSetTab("profile")}
+          disabled={navigationLocked}
           sub="👤"
           label="My Profile"
           accent={STATIC_TAB_ACCENTS.profile.accent}
@@ -171,7 +199,8 @@ export default function App() {
           tabRefs={tabRefs}
           id="debrief"
           active={tab === "debrief"}
-          onClick={() => setTab("debrief")}
+          onClick={() => guardedSetTab("debrief")}
+          disabled={navigationLocked}
           sub="🎉"
           label="Debrief"
           accent={STATIC_TAB_ACCENTS.debrief.accent}
@@ -181,7 +210,8 @@ export default function App() {
           tabRefs={tabRefs}
           id="planner"
           active={tab === "planner"}
-          onClick={() => setTab("planner")}
+          onClick={() => guardedSetTab("planner")}
+          disabled={navigationLocked}
           sub="📊"
           label="Planner"
           accent={STATIC_TAB_ACCENTS.planner.accent}
@@ -189,10 +219,9 @@ export default function App() {
         />
       </div>
 
-      {tab === "intro" && <IntroPage onAccept={handleIntelDownlink} />}
-      {tab === "resources" && <ResourcesPage onAdvance={() => setTab(ZONE_PARKS[0].id)} />}
+      {tab === "resources" && <ResourcesPage onAdvance={handleAcceptMission} advanceLabel="Accept Mission" />}
 
-      {currentPark && (
+      {currentPark && !navigationLocked && (
         <ParkPage
           park={currentPark}
           votesByItem={votes.votesByItem}
@@ -208,7 +237,7 @@ export default function App() {
         />
       )}
 
-      {tab === "rations" && (
+      {tab === "rations" && !navigationLocked && (
         <RationsPage
           votesByItem={votes.votesByItem}
           myName={person}
@@ -218,9 +247,9 @@ export default function App() {
         />
       )}
 
-      {tab === "profile" && <MissionProfilePage myName={person} votesByItem={votes.votesByItem} />}
-      {tab === "debrief" && <FamilyDebriefPage votesByItem={votes.votesByItem} />}
-      {tab === "planner" && <PlannerView votesByItem={votes.votesByItem} />}
+      {tab === "profile" && !navigationLocked && <MissionProfilePage myName={person} votesByItem={votes.votesByItem} />}
+      {tab === "debrief" && !navigationLocked && <FamilyDebriefPage votesByItem={votes.votesByItem} />}
+      {tab === "planner" && !navigationLocked && <PlannerView votesByItem={votes.votesByItem} />}
 
       {activeTransition && (
         <MissionTransition
@@ -228,15 +257,20 @@ export default function App() {
           onComplete={() => {
             const next = activeTransition.nextTab;
             setActiveTransition(null);
+            setExperiencePhase("planning");
             if (next) setTab(next);
           }}
         />
+      )}
+
+      {cinematicMounted && (
+        <CinematicIntro onProceedToBriefing={handleProceedToBriefing} onExitComplete={handleCinematicExitComplete} />
       )}
     </div>
   );
 }
 
-function TabButton({ tabRefs, id, active, onClick, sub, label, accent, accentSoft }) {
+function TabButton({ tabRefs, id, active, onClick, disabled, sub, label, accent, accentSoft }) {
   return (
     <button
       ref={(node) => {
@@ -244,10 +278,12 @@ function TabButton({ tabRefs, id, active, onClick, sub, label, accent, accentSof
       }}
       className={`tab ${active ? "active" : ""}`}
       onClick={onClick}
+      aria-disabled={disabled || undefined}
       style={{
         borderColor: active ? accent : "transparent",
         background: active ? accentSoft : "transparent",
         color: active ? accent : "#7a7263",
+        cursor: disabled ? "not-allowed" : "pointer",
       }}
     >
       <div className="tab-sub">{sub}</div>

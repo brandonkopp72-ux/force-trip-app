@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
 const STAR_COUNT = 80;
-const CRAWL_DURATION_S = 42;
 
 /**
- * Contained Star-Wars-style crawl.
+ * Contained OR full-screen Star-Wars-style crawl.
  *
  * The important geometry is:
  *   viewport/camera (perspective)
@@ -13,8 +12,23 @@ const CRAWL_DURATION_S = 42;
  *
  * Do NOT animate scale() on the whole crawl. Real perspective makes text
  * naturally shrink and converge as it travels farther up the tilted plane.
+ *
+ * `fullscreen` swaps the outer container from a contained 480px box to a
+ * `100dvh` (with `100vh` fallback) full-viewport surface, and recalculates
+ * the camera/plane/track geometry for that larger, differently-proportioned
+ * space. These full-screen numbers are a first-pass estimate, not yet
+ * verified against a real recording the way the contained version was —
+ * flagged clearly in the accompanying report.
  */
-export function StarfieldCrawl({ children }) {
+export function StarfieldCrawl({
+  children,
+  fullscreen = false,
+  starsOnly = false,
+  durationSeconds = 42,
+  columnWidthVw = 80,
+  fontWeight = 700,
+  letterSpacingEm = 0,
+}) {
   const [reduced, setReduced] = useState(false);
 
   useEffect(() => {
@@ -33,15 +47,21 @@ export function StarfieldCrawl({ children }) {
     []
   );
 
+  const outerHeight = fullscreen ? undefined : reduced ? "auto" : 480;
+
   return (
     <div
       style={{
-        position: "relative",
-        height: reduced ? "auto" : 480,
+        position: fullscreen ? "fixed" : "relative",
+        top: fullscreen ? 0 : undefined,
+        left: fullscreen ? 0 : undefined,
+        width: fullscreen ? "100%" : undefined,
+        height: fullscreen ? (reduced ? "auto" : "100vh") : outerHeight,
+        minHeight: fullscreen && !reduced ? "100dvh" : undefined,
         overflow: "hidden",
         background: "#000",
-        borderRadius: 12,
-        marginBottom: 20,
+        borderRadius: fullscreen ? 0 : 12,
+        marginBottom: fullscreen ? 0 : 20,
         padding: reduced ? "20px 16px" : 0,
       }}
     >
@@ -59,7 +79,7 @@ export function StarfieldCrawl({ children }) {
             }
             84% { opacity: 1; }
             100% {
-              transform: translate3d(0, calc(-100% - 620px), 0);
+              transform: translate3d(0, calc(-100% - ${fullscreen ? 900 : 620}px), 0);
               opacity: 0;
             }
           }
@@ -85,15 +105,15 @@ export function StarfieldCrawl({ children }) {
 
       {reduced ? (
         <div style={{ position: "relative" }}>{children}</div>
-      ) : (
+      ) : starsOnly ? null : (
         <>
           {/* CAMERA: perspective belongs here, outside the tilted crawl plane. */}
           <div
             style={{
               position: "absolute",
               inset: 0,
-              perspective: 340,
-              perspectiveOrigin: "50% 18%",
+              perspective: fullscreen ? 700 : 340,
+              perspectiveOrigin: fullscreen ? "50% 22%" : "50% 18%",
               overflow: "hidden",
             }}
           >
@@ -101,12 +121,12 @@ export function StarfieldCrawl({ children }) {
             <div
               style={{
                 position: "absolute",
-                left: "10%",
-                width: "80%",
-                top: "28%",
-                height: "180%",
+                left: `${(100 - columnWidthVw) / 2}%`,
+                width: `${columnWidthVw}%`,
+                top: fullscreen ? "24%" : "28%",
+                height: fullscreen ? "220%" : "180%",
                 transformOrigin: "50% 0%",
-                transform: "rotateX(32deg)",
+                transform: `rotateX(${fullscreen ? 34 : 32}deg)`,
                 transformStyle: "preserve-3d",
               }}
             >
@@ -114,12 +134,14 @@ export function StarfieldCrawl({ children }) {
               <div
                 style={{
                   position: "absolute",
-                  top: "46%",
+                  top: fullscreen ? "40%" : "46%",
                   left: 0,
                   width: "100%",
                   paddingInline: "3%",
                   boxSizing: "border-box",
-                  animation: `crawlTravel ${CRAWL_DURATION_S}s linear forwards`,
+                  fontWeight,
+                  letterSpacing: `${letterSpacingEm}em`,
+                  animation: `crawlTravel ${durationSeconds}s linear forwards`,
                   willChange: "transform, opacity",
                   backfaceVisibility: "hidden",
                 }}
@@ -136,8 +158,9 @@ export function StarfieldCrawl({ children }) {
               position: "absolute",
               inset: 0,
               pointerEvents: "none",
-              background:
-                "linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.92) 4%, rgba(0,0,0,0.48) 10%, rgba(0,0,0,0) 20%)",
+              background: fullscreen
+                ? "linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.94) 6%, rgba(0,0,0,0.55) 14%, rgba(0,0,0,0) 26%)"
+                : "linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.92) 4%, rgba(0,0,0,0.48) 10%, rgba(0,0,0,0) 20%)",
             }}
           />
         </>

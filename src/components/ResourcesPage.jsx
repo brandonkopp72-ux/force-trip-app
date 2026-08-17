@@ -2,7 +2,7 @@ import { HeroBanner } from "./HeroBanner.jsx";
 import { PARKS } from "../data/parks.js";
 import { YOUTUBE_CHANNELS } from "../data/resources.js";
 
-export function ResourcesPage({ onAdvance }) {
+export function ResourcesPage({ onAdvance, advanceLabel = "Review Mission Objectives →" }) {
   const officialLinks = PARKS.filter((p) => p.learnMoreUrl);
 
   return (
@@ -45,8 +45,8 @@ export function ResourcesPage({ onAdvance }) {
       </div>
 
       {onAdvance && (
-        <button className="advance-btn" style={{ background: "#7a2b2b" }} onClick={onAdvance}>
-          Review Mission Objectives →
+        <button className="advance-btn" style={{ background: "#2f5d42" }} onClick={onAdvance}>
+          {advanceLabel}
         </button>
       )}
     </div>
