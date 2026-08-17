@@ -92,8 +92,8 @@ export function StarfieldCrawl({ children }) {
             style={{
               position: "absolute",
               inset: 0,
-              perspective: 430,
-              perspectiveOrigin: "50% 28%",
+              perspective: 340,
+              perspectiveOrigin: "50% 18%",
               overflow: "hidden",
             }}
           >
@@ -101,12 +101,12 @@ export function StarfieldCrawl({ children }) {
             <div
               style={{
                 position: "absolute",
-                left: "7%",
-                width: "86%",
-                top: "32%",
+                left: "10%",
+                width: "80%",
+                top: "28%",
                 height: "180%",
                 transformOrigin: "50% 0%",
-                transform: "rotateX(25deg)",
+                transform: "rotateX(32deg)",
                 transformStyle: "preserve-3d",
               }}
             >
@@ -114,9 +114,11 @@ export function StarfieldCrawl({ children }) {
               <div
                 style={{
                   position: "absolute",
-                  top: "72%",
+                  top: "46%",
                   left: 0,
                   width: "100%",
+                  paddingInline: "3%",
+                  boxSizing: "border-box",
                   animation: `crawlTravel ${CRAWL_DURATION_S}s linear forwards`,
                   willChange: "transform, opacity",
                   backfaceVisibility: "hidden",
@@ -135,7 +137,7 @@ export function StarfieldCrawl({ children }) {
               inset: 0,
               pointerEvents: "none",
               background:
-                "linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.96) 7%, rgba(0,0,0,0.65) 16%, rgba(0,0,0,0) 34%)",
+                "linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.92) 4%, rgba(0,0,0,0.48) 10%, rgba(0,0,0,0) 20%)",
             }}
           />
         </>
