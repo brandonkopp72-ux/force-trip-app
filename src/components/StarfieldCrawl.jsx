@@ -5,20 +5,21 @@ const STAR_COUNT = 80;
 /**
  * Contained OR full-screen Star-Wars-style crawl.
  *
- * The important geometry is:
- *   viewport/camera (perspective)
- *     -> fixed tilted plane (rotateX)
- *       -> text track moving upward on that plane
+ * FULLSCREEN geometry (redesigned):
+ *   The PLANE is sized to exactly match the viewport (no more
+ *   percentage-of-percentage math relative to an already-percentage-sized
+ *   container — that compounding was the root cause of both the "13 seconds
+ *   of dead travel" and "flat, non-receding text" bugs in earlier passes).
+ *   The tilt pivot sits at the BOTTOM of the plane (near the viewer), so
+ *   text entering at the bottom starts at full size with ~zero Z-depth, and
+ *   only recedes/shrinks as it travels upward away from that pivot — the
+ *   standard, intuitive crawl setup.
+ *
+ * CONTAINED geometry is left exactly as previously tuned/verified working,
+ * untouched by this redesign.
  *
  * Do NOT animate scale() on the whole crawl. Real perspective makes text
- * naturally shrink and converge as it travels farther up the tilted plane.
- *
- * `fullscreen` swaps the outer container from a contained 480px box to a
- * `100dvh` (with `100vh` fallback) full-viewport surface, and recalculates
- * the camera/plane/track geometry for that larger, differently-proportioned
- * space. These full-screen numbers are a first-pass estimate, not yet
- * verified against a real recording the way the contained version was —
- * flagged clearly in the accompanying report.
+ * naturally shrink and converge as it travels farther from the pivot.
  */
 export function StarfieldCrawl({
   children,
@@ -48,6 +49,7 @@ export function StarfieldCrawl({
   );
 
   const outerHeight = fullscreen ? undefined : reduced ? "auto" : 480;
+  const travelExtraPx = fullscreen ? 500 : 620;
 
   return (
     <div
@@ -77,9 +79,9 @@ export function StarfieldCrawl({
               transform: translate3d(0, 0, 0);
               opacity: 1;
             }
-            84% { opacity: 1; }
+            92% { opacity: 1; }
             100% {
-              transform: translate3d(0, calc(-100% - ${fullscreen ? 900 : 620}px), 0);
+              transform: translate3d(0, calc(-100% - ${travelExtraPx}px), 0);
               opacity: 0;
             }
           }
@@ -105,36 +107,39 @@ export function StarfieldCrawl({
 
       {reduced ? (
         <div style={{ position: "relative" }}>{children}</div>
-      ) : starsOnly ? null : (
+      ) : starsOnly ? null : fullscreen ? (
         <>
-          {/* CAMERA: perspective belongs here, outside the tilted crawl plane. */}
+          {/* CAMERA: fills the viewport exactly. */}
           <div
             style={{
               position: "absolute",
               inset: 0,
-              perspective: fullscreen ? 700 : 340,
-              perspectiveOrigin: fullscreen ? "50% 22%" : "50% 18%",
+              perspective: "70vh",
+              perspectiveOrigin: "50% 15%",
               overflow: "hidden",
             }}
           >
-            {/* PLANE: fixed tilt. The text moves on this plane. */}
+            {/* PLANE: sized to match the viewport exactly (no compounded
+                percentages). Pivot at the BOTTOM — near the viewer — so
+                content starts full-size and recedes as it moves away. */}
             <div
               style={{
                 position: "absolute",
                 left: `${(100 - columnWidthVw) / 2}%`,
                 width: `${columnWidthVw}%`,
-                top: fullscreen ? "24%" : "28%",
-                height: fullscreen ? "220%" : "180%",
-                transformOrigin: "50% 0%",
-                transform: `rotateX(${fullscreen ? 34 : 32}deg)`,
+                top: 0,
+                height: "100%",
+                transformOrigin: "50% 100%",
+                transform: "rotateX(-25deg)",
                 transformStyle: "preserve-3d",
               }}
             >
-              {/* TRACK: starts below the viewport and travels toward the horizon. */}
+              {/* TRACK: starts right at the pivot (bottom edge) so it enters
+                  the visible frame almost immediately after mounting. */}
               <div
                 style={{
                   position: "absolute",
-                  top: fullscreen ? "40%" : "46%",
+                  top: "100%",
                   left: 0,
                   width: "100%",
                   paddingInline: "3%",
@@ -151,16 +156,68 @@ export function StarfieldCrawl({
             </div>
           </div>
 
-          {/* Soft horizon fade: makes the crawl disappear into the vanishing zone. */}
           <div
             aria-hidden="true"
             style={{
               position: "absolute",
               inset: 0,
               pointerEvents: "none",
-              background: fullscreen
-                ? "linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.94) 6%, rgba(0,0,0,0.55) 14%, rgba(0,0,0,0) 26%)"
-                : "linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.92) 4%, rgba(0,0,0,0.48) 10%, rgba(0,0,0,0) 20%)",
+              background: "linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.9) 5%, rgba(0,0,0,0.4) 11%, rgba(0,0,0,0) 20%)",
+            }}
+          />
+        </>
+      ) : (
+        <>
+          {/* CONTAINED mode — untouched, exactly as previously tuned/verified. */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              perspective: 340,
+              perspectiveOrigin: "50% 18%",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                left: `${(100 - columnWidthVw) / 2}%`,
+                width: `${columnWidthVw}%`,
+                top: "28%",
+                height: "180%",
+                transformOrigin: "50% 0%",
+                transform: "rotateX(32deg)",
+                transformStyle: "preserve-3d",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  top: "46%",
+                  left: 0,
+                  width: "100%",
+                  paddingInline: "3%",
+                  boxSizing: "border-box",
+                  fontWeight,
+                  letterSpacing: `${letterSpacingEm}em`,
+                  animation: `crawlTravel ${durationSeconds}s linear forwards`,
+                  willChange: "transform, opacity",
+                  backfaceVisibility: "hidden",
+                }}
+              >
+                {children}
+              </div>
+            </div>
+          </div>
+
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              pointerEvents: "none",
+              background:
+                "linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.92) 4%, rgba(0,0,0,0.48) 10%, rgba(0,0,0,0) 20%)",
             }}
           />
         </>

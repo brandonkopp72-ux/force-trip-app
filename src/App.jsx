@@ -64,28 +64,41 @@ export default function App() {
     }
   }, [experiencePhase]);
 
-  // Called by CinematicIntro the instant its CTA is clicked — briefing
-  // content becomes the active phase right away, while the cinematic itself
-  // is still fading out on top (see onExitComplete below).
-  const handleProceedToBriefing = () => {
-    setExperiencePhase("briefing");
+  // Called by CinematicIntro the instant its CTA is clicked. Starts the
+  // restored Intel Acquired (dataBarrage) transition immediately — it renders
+  // underneath CinematicIntro's own fading overlay (lower z-index), so the
+  // two blend into each other rather than showing a blank frame between them.
+  // Duration doubled per current direction: 1700ms -> 3400ms.
+  const handleCtaClick = () => {
+    if (activeTransition) return; // re-entrancy guard, defense-in-depth alongside CinematicIntro's own guard
+    setActiveTransition({
+      variant: "dataBarrage",
+      primary: "INTEL ACQUIRED",
+      secondary: "MISSION RESOURCES ONLINE",
+      verifiedText: "DOWNLINK INITIATED",
+      accent: "#e8963a",
+      duration: 3400,
+      onCompletePhase: "briefing",
+    });
   };
 
   // Called by CinematicIntro only once its own exit-fade transition has
-  // genuinely finished — safe to unmount the overlay now.
+  // genuinely finished — safe to unmount the overlay now. Intel Acquired
+  // (started at CTA click, above) continues running independently.
   const handleCinematicExitComplete = () => {
     setCinematicMounted(false);
   };
 
   // The former ResourcesPage terminal action ("Review Mission Objectives →")
   // becomes Accept Mission — this is now the ONLY way past the briefing.
+  // Duration doubled per current direction: 1800ms -> 3600ms.
   const handleAcceptMission = () => {
     if (activeTransition) return; // re-entrancy guard
     setActiveTransition({
       primary: "MISSION ACCEPTED",
       secondary: "FORCE TRAVEL COMMAND",
       accent: "#3ddc84",
-      duration: 1800,
+      duration: 3600,
       nextTab: ZONE_PARKS[0].id,
     });
   };
@@ -256,15 +269,16 @@ export default function App() {
           {...activeTransition}
           onComplete={() => {
             const next = activeTransition.nextTab;
+            const nextPhase = activeTransition.onCompletePhase || "planning";
             setActiveTransition(null);
-            setExperiencePhase("planning");
+            setExperiencePhase(nextPhase);
             if (next) setTab(next);
           }}
         />
       )}
 
       {cinematicMounted && (
-        <CinematicIntro onProceedToBriefing={handleProceedToBriefing} onExitComplete={handleCinematicExitComplete} />
+        <CinematicIntro onCtaClick={handleCtaClick} onExitComplete={handleCinematicExitComplete} />
       )}
     </div>
   );
