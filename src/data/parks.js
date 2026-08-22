@@ -729,21 +729,6 @@ export const PARKS = [
     isHHN: true,
     lands: [
       {
-        name: "Meal Strategy",
-        singleChoiceGroups: [
-          {
-            id: "hhn-mealstrategy",
-            label: "Before Horror Nights — pick one per person",
-            note: "This is a planning decision, not a restaurant vote — see the Rations tab for actual dinner picks.",
-            options: [
-              { id: "hhn-meal-sitdown", name: "Full sit-down dinner before gates", price: "" },
-              { id: "hhn-meal-quickbite", name: "Quick bite before gates", price: "" },
-              { id: "hhn-meal-snackonly", name: "Skip dinner, snack during the event", price: "" },
-            ],
-          },
-        ],
-      },
-      {
         name: "Haunted Houses",
         items: [
           {

@@ -20,21 +20,36 @@ export function RationsPage({ votesByItem, myName, onSetLevel, topPicks, onSetTo
       <HeroBanner accent="#7a2b2b" title="Rations" subtitle="Vote on dining, no matter which night it lands on" />
 
       <div className="card" style={{ background: "#f3ecd8", borderColor: "#d8c088" }}>
-        <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: 13, marginBottom: 3 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontFamily: "'Oswald', sans-serif",
+            fontWeight: 700,
+            fontSize: 13,
+            marginBottom: 3,
+          }}
+        >
           🎂 Ava's Birthday Dinner
+          <span
+            style={{
+              fontSize: 9.5,
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+              color: "#8a6d1f",
+              background: "#fff",
+              border: "1px solid #d8c088",
+              borderRadius: 6,
+              padding: "2px 6px",
+            }}
+          >
+            🔒 LOCKED · THU OCT 22
+          </span>
         </div>
         <div style={{ fontSize: 12.5, color: "#5c4a2a" }}>
-          Not a vote — Ava gets the final call on where her birthday dinner happens, no matter what the rest of the
-          family prefers.
-        </div>
-      </div>
-
-      <div className="card" style={{ background: "#f3ecd8", borderColor: "#d8c088" }}>
-        <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: 13, marginBottom: 3 }}>
-          👻 Horror Nights Meal Strategy
-        </div>
-        <div style={{ fontSize: 12.5, color: "#5c4a2a" }}>
-          A planning decision, not a restaurant — vote it on the Halloween Horror Nights zone tab.
+          Not a vote — Thursday, October 22 is Ava's birthday, and her dinner pick is the plan for that night no
+          matter what the rest of the family prefers elsewhere on this page.
         </div>
       </div>
 

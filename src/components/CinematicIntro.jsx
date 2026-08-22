@@ -14,7 +14,15 @@ const CRAWL_LINES = [
   "Family Of Rebels Creating Experiences.",
   "Now, a new objective looms on the horizon: Central Florida — birthplace of Florida Man, home to mythical lands, towering coasters, dark magic, and creatures perhaps best left untold.",
   "F.O.R.C.E. will rendezvous at MCO and establish basecamp at Dockside before launching their first strike against the fortress known as Hollywood Studios — where legends are made, empires rise, and lightsabers are sold to anyone brave enough to spend the credits.",
-  "Downloaded and opened, the archives must be. Know what awaits them, they do not. Hidden, the path forward lies. Choose, they must.",
+];
+
+// Each of these four closing statements renders as its own standalone,
+// non-wrapping line — a dramatic beat rather than a wrapped paragraph.
+const FINAL_LINES = [
+  "Downloaded and opened, the archives must be.",
+  "Know what awaits them, they do not.",
+  "The path forward lies hidden.",
+  "Choose, they must.",
 ];
 
 // fontStyle explicitly forced to "normal" — belt and suspenders against any
@@ -26,6 +34,17 @@ const crawlTextStyle = {
   color: "#f5cc4d",
   textAlign: "center",
   margin: "0 0 22px",
+};
+
+// Same look as the rest of the crawl, but forced onto a single line each,
+// with a modest responsive font-size as the fallback if a line would
+// otherwise be forced to wrap on a narrow viewport — never break the
+// sentence itself.
+const finalLineStyle = {
+  ...crawlTextStyle,
+  whiteSpace: "nowrap",
+  fontSize: "clamp(12px, 2.6vw, 15px)",
+  margin: "0 0 26px",
 };
 
 function CtaButton({ onClick, pulse }) {
@@ -178,6 +197,11 @@ export function CinematicIntro({ onCtaClick, onExitComplete }) {
                 {line}
               </p>
             ))}
+            {FINAL_LINES.map((line, i) => (
+              <p key={i} style={{ ...finalLineStyle, fontSize: "clamp(11px, 3.4vw, 14px)", fontWeight: 600 }}>
+                {line}
+              </p>
+            ))}
           </div>
           {showCta && <CtaButton onClick={handleCtaClick} pulse={false} />}
         </div>
@@ -195,6 +219,11 @@ export function CinematicIntro({ onCtaClick, onExitComplete }) {
             <div style={{ ...crawlTextStyle, fontSize: 22, fontWeight: 600, marginBottom: 30 }}>FLORIDA STRIKES BACK</div>
             {CRAWL_LINES.map((line, i) => (
               <p key={i} style={{ ...crawlTextStyle, fontSize: 15 }}>
+                {line}
+              </p>
+            ))}
+            {FINAL_LINES.map((line, i) => (
+              <p key={i} style={finalLineStyle}>
                 {line}
               </p>
             ))}
