@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useIdentity } from "./hooks/useIdentity.js";
 import { useVotes } from "./hooks/useVotes.js";
+import { useAudioPreference } from "./hooks/useAudioPreference.js";
+import { unlockAudio } from "./lib/audioEngine.js";
 import { IdentityGate } from "./components/IdentityGate.jsx";
 import { MissionTransition } from "./components/MissionTransition.jsx";
 import { CinematicIntro } from "./components/CinematicIntro.jsx";
@@ -27,8 +29,9 @@ const STATIC_TAB_ACCENTS = {
 };
 
 export default function App() {
-  const { person, pin, checking, loginError, login, logout } = useIdentity();
+  const { person, pin, checking, loginError, login, logout, missionAccepted, markMissionAccepted } = useIdentity();
   const votes = useVotes(person, pin);
+  const { muted, toggleMuted } = useAudioPreference(person);
   const [tab, setTab] = useState("resources");
 
   // Coarse experience state — App owns ONLY where the user is in the overall
@@ -39,22 +42,40 @@ export default function App() {
   //   "planning"  -> normal, unrestricted tab navigation
   const [experiencePhase, setExperiencePhase] = useState("login");
   const [cinematicMounted, setCinematicMounted] = useState(false);
+  const [replayMode, setReplayMode] = useState(false);
   const [activeTransition, setActiveTransition] = useState(null);
 
   const tabRefs = useRef({});
   const tabRowRef = useRef(null);
 
-  // Login always resolves exactly as before. On success we now move straight
-  // into the cinematic — no Mission Accepted here anymore; that moved to the
-  // end of the briefing (see handleAcceptMission).
+  // Login resolves exactly as before, but now branches on whether this
+  // person has already completed onboarding (persisted server-side).
+  // Returning members skip straight to the normal planning app; first-timers
+  // (or anyone whose acceptance never successfully recorded) get the full
+  // cinematic sequence, same as always.
   const handleLogin = async (name, enteredPin) => {
+    unlockAudio(); // tied directly to this click/submit gesture, before any await
     const ok = await login(name, enteredPin);
     if (ok) {
-      setExperiencePhase("cinematic");
-      setCinematicMounted(true);
+      // missionAccepted reflects the value fetched during this same login
+      // call — safe to read synchronously right after `login` resolves.
     }
     return ok;
   };
+
+  // missionAccepted can only become known truthfully once login has
+  // actually resolved, so branch the phase transition here rather than
+  // inside handleLogin's own return timing.
+  useEffect(() => {
+    if (person && experiencePhase === "login") {
+      if (missionAccepted) {
+        setExperiencePhase("planning");
+      } else {
+        setExperiencePhase("cinematic");
+        setCinematicMounted(true);
+      }
+    }
+  }, [person, missionAccepted, experiencePhase]);
 
   // Force the tab to Resources the moment briefing begins, and keep it there
   // for as long as briefing is active (see TabButton onClick guards below).
@@ -64,11 +85,12 @@ export default function App() {
     }
   }, [experiencePhase]);
 
-  // Called by CinematicIntro the instant its CTA is clicked. Starts the
-  // restored Intel Acquired (dataBarrage) transition immediately — it renders
-  // underneath CinematicIntro's own fading overlay (lower z-index), so the
-  // two blend into each other rather than showing a blank frame between them.
-  // Duration doubled per current direction: 1700ms -> 3400ms.
+  // Called by CinematicIntro the instant its CTA is clicked — onboarding
+  // mode only (replay mode passes no onCtaClick at all, see render below).
+  // Starts the restored Intel Acquired (dataBarrage) transition immediately
+  // — it renders underneath CinematicIntro's own fading overlay (lower
+  // z-index), so the two blend into each other rather than showing a blank
+  // frame between them.
   const handleCtaClick = () => {
     if (activeTransition) return; // re-entrancy guard, defense-in-depth alongside CinematicIntro's own guard
     setActiveTransition({
@@ -83,15 +105,21 @@ export default function App() {
   };
 
   // Called by CinematicIntro only once its own exit-fade transition has
-  // genuinely finished — safe to unmount the overlay now. Intel Acquired
-  // (started at CTA click, above) continues running independently.
+  // genuinely finished — safe to unmount the overlay now. In onboarding
+  // mode, Intel Acquired (started at CTA click, above) continues running
+  // independently. In replay mode, nothing else was started, so this simply
+  // ends the replay and returns the person to whatever they were already
+  // looking at underneath.
   const handleCinematicExitComplete = () => {
     setCinematicMounted(false);
+    setReplayMode(false);
   };
 
   // The former ResourcesPage terminal action ("Review Mission Objectives →")
   // becomes Accept Mission — this is now the ONLY way past the briefing.
-  // Duration doubled per current direction: 1800ms -> 3600ms.
+  // markAcceptance:true tags this specific transition so the onComplete
+  // handler below knows to persist mission-acceptance exactly here — not
+  // for the Intel Acquired transition, which shares the same component.
   const handleAcceptMission = () => {
     if (activeTransition) return; // re-entrancy guard
     setActiveTransition({
@@ -100,7 +128,19 @@ export default function App() {
       accent: "#3ddc84",
       duration: 3600,
       nextTab: ZONE_PARKS[0].id,
+      markAcceptance: true,
     });
+  };
+
+  // Replay Mission Opening (Profile page). Deliberately does NOT touch
+  // experiencePhase, tab, or navigation locking at all — the cinematic is
+  // just an overlay on top of whatever's already showing underneath, and
+  // nothing about voting/navigation state is affected by mounting it.
+  const handleReplayMissionOpening = () => {
+    if (cinematicMounted) return;
+    unlockAudio(); // this click is its own user gesture
+    setReplayMode(true);
+    setCinematicMounted(true);
   };
 
   // Keep the active tab scrolled to the center of the tab bar whenever it changes.
@@ -260,7 +300,16 @@ export default function App() {
         />
       )}
 
-      {tab === "profile" && !navigationLocked && <MissionProfilePage myName={person} votesByItem={votes.votesByItem} />}
+      {tab === "profile" && !navigationLocked && (
+        <MissionProfilePage
+          myName={person}
+          votesByItem={votes.votesByItem}
+          onReplayMissionOpening={handleReplayMissionOpening}
+          replayDisabled={cinematicMounted}
+          muted={muted}
+          onToggleMuted={toggleMuted}
+        />
+      )}
       {tab === "debrief" && !navigationLocked && <FamilyDebriefPage votesByItem={votes.votesByItem} />}
       {tab === "planner" && !navigationLocked && <PlannerView votesByItem={votes.votesByItem} />}
 
@@ -270,6 +319,7 @@ export default function App() {
           onComplete={() => {
             const next = activeTransition.nextTab;
             const nextPhase = activeTransition.onCompletePhase || "planning";
+            if (activeTransition.markAcceptance) markMissionAccepted();
             setActiveTransition(null);
             setExperiencePhase(nextPhase);
             if (next) setTab(next);
@@ -278,7 +328,13 @@ export default function App() {
       )}
 
       {cinematicMounted && (
-        <CinematicIntro onCtaClick={handleCtaClick} onExitComplete={handleCinematicExitComplete} />
+        <CinematicIntro
+          mode={replayMode ? "replay" : "onboarding"}
+          onCtaClick={replayMode ? undefined : handleCtaClick}
+          onExitComplete={handleCinematicExitComplete}
+          muted={muted}
+          onToggleMuted={toggleMuted}
+        />
       )}
     </div>
   );

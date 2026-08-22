@@ -1,7 +1,7 @@
 import { HeroBanner } from "./HeroBanner.jsx";
 import { buildPersonalProfile, buildSquadOverlaps } from "../lib/tripStats.js";
 
-export function MissionProfilePage({ myName, votesByItem }) {
+export function MissionProfilePage({ myName, votesByItem, onReplayMissionOpening, replayDisabled, muted, onToggleMuted }) {
   if (!myName) return null;
   const profile = buildPersonalProfile(myName, votesByItem);
   const overlaps = buildSquadOverlaps(myName, votesByItem);
@@ -63,6 +63,45 @@ export function MissionProfilePage({ myName, votesByItem }) {
           {profile.dining.yes} Yes · {profile.dining.fine} Fine With It · {profile.dining.no} No Thanks
         </div>
       </div>
+
+      {(onReplayMissionOpening || onToggleMuted) && (
+        <div style={{ marginTop: 4, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+          {onReplayMissionOpening && (
+            <button
+              onClick={onReplayMissionOpening}
+              disabled={replayDisabled}
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: "#1f4e79",
+                background: "none",
+                border: "1px solid #c7d3de",
+                borderRadius: 8,
+                padding: "8px 16px",
+                cursor: replayDisabled ? "not-allowed" : "pointer",
+                opacity: replayDisabled ? 0.5 : 1,
+              }}
+            >
+              🎬 Replay Mission Opening
+            </button>
+          )}
+          {onToggleMuted && (
+            <button
+              onClick={onToggleMuted}
+              style={{
+                fontSize: 11.5,
+                color: "#8a8272",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 4,
+              }}
+            >
+              {muted ? "🔇 Cinematic audio: off" : "🔊 Cinematic audio: on"}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

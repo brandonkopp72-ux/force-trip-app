@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { StarfieldCrawl } from "./StarfieldCrawl.jsx";
+import { playStarfieldRumble, playCrawlSwell, playCtaBloom } from "../lib/audioEngine.js";
 
 const DISSOLVE_MS = 600;
 const OPENING_HOLD_MS = 1500;
@@ -79,16 +80,21 @@ function CtaButton({ onClick, pulse }) {
 
 /**
  * Owns the entire post-PIN cinematic sequence through the CTA click.
+ *
+ * mode="onboarding" (default) — the normal first-time flow. Clicking the
+ *   CTA calls onCtaClick, which the parent uses to start Intel Acquired.
+ * mode="replay" — a manual, enjoyment-only replay from the Profile page.
+ *   onCtaClick is simply not passed by the parent in this mode, so clicking
+ *   the CTA here only closes the overlay — no Intel Acquired, no phase
+ *   change, no effect on mission-acceptance or navigation state at all.
+ *
  * Exposes:
- *   onCtaClick() — fired the instant the CTA is clicked. The parent is
- *     responsible for starting the Intel Acquired (MissionTransition
- *     dataBarrage) sequence at this point.
+ *   onCtaClick() — fired the instant the CTA is clicked, onboarding mode only.
  *   onExitComplete() — fired only once this component's own exit-fade CSS
  *     transition has genuinely finished, so the parent knows it's safe to
- *     unmount this overlay (Intel Acquired continues underneath/after,
- *     independent of this component's own lifetime).
+ *     unmount this overlay.
  */
-export function CinematicIntro({ onCtaClick, onExitComplete }) {
+export function CinematicIntro({ mode = "onboarding", onCtaClick, onExitComplete, muted, onToggleMuted }) {
   const [stage, setStage] = useState("dissolve");
   const [entered, setEntered] = useState(false);
   const [reduced, setReduced] = useState(false);
@@ -97,6 +103,14 @@ export function CinematicIntro({ onCtaClick, onExitComplete }) {
   useEffect(() => {
     setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }, []);
+
+  // Original synthesized audio cues, keyed to stage changes. playX() itself
+  // is a no-op if muted or if Web Audio isn't available — never throws.
+  useEffect(() => {
+    if (stage === "hold-open") playStarfieldRumble();
+    if (stage === "crawl") playCrawlSwell();
+    if (stage === "cta") playCtaBloom();
+  }, [stage]);
 
   // Entrance cross-dissolve: double-rAF so the initial opacity:0 paints
   // before the transition to opacity:1 begins, guaranteeing the fade is
@@ -136,7 +150,7 @@ export function CinematicIntro({ onCtaClick, onExitComplete }) {
   const handleCtaClick = () => {
     if (stage === "exiting") return; // re-entrancy guard against double-click
     setStage("exiting");
-    onCtaClick();
+    if (onCtaClick) onCtaClick(); // absent entirely in replay mode — see component doc above
   };
 
   const starsOnly = stage === "dissolve" || stage === "hold-open";
@@ -167,6 +181,27 @@ export function CinematicIntro({ onCtaClick, onExitComplete }) {
           box-shadow: 0 0 26px 4px rgba(245,204,77,0.75), inset 0 0 18px rgba(245,204,77,0.32);
         }
       `}</style>
+
+      {onToggleMuted && (
+        <button
+          onClick={onToggleMuted}
+          aria-label={muted ? "Unmute cinematic audio" : "Mute cinematic audio"}
+          style={{
+            position: "absolute",
+            top: 14,
+            right: 16,
+            zIndex: 1,
+            background: "none",
+            border: "none",
+            fontSize: 15,
+            opacity: 0.55,
+            cursor: "pointer",
+            padding: 6,
+          }}
+        >
+          {muted ? "🔇" : "🔊"}
+        </button>
+      )}
 
       {reduced ? (
         <div

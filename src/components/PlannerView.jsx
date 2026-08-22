@@ -1,5 +1,5 @@
 import { HeroBanner } from "./HeroBanner.jsx";
-import { classifyAllParks, buildCompletionStatus } from "../lib/tripStats.js";
+import { classifyAllParks, buildCompletionStatus, buildParkReadiness } from "../lib/tripStats.js";
 import { computeNaturalSquadOverlap } from "../lib/classification.js";
 import { getAllVotableRideItems } from "../data/parks.js";
 import { FAMILY } from "../data/family.js";
@@ -22,6 +22,7 @@ function GroupSection({ title, items, renderDetail }) {
 export function PlannerView({ votesByItem }) {
   const parkResults = classifyAllParks(votesByItem);
   const completion = buildCompletionStatus(votesByItem);
+  const readiness = buildParkReadiness(votesByItem);
   const rideItems = getAllVotableRideItems();
   const rideItemIds = rideItems.map((i) => i.id);
 
@@ -37,6 +38,30 @@ export function PlannerView({ votesByItem }) {
   return (
     <div className="page">
       <HeroBanner accent="#4a1414" title="Planner View" subtitle="Interprets preferences, doesn't build a schedule" />
+
+      <div className="card">
+        <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, marginBottom: 10 }}>Mission Readiness</div>
+        {readiness.map((r) => {
+          const remaining = FAMILY.filter((name) => !r.completeByPerson[name]);
+          return (
+            <div key={r.parkId} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #ece9e4" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <strong style={{ fontSize: 13.5 }}>{r.parkName}</strong>
+                <span style={{ fontSize: 12.5, color: "#6b6455" }}>
+                  {r.completeCount} / {FAMILY.length}
+                </span>
+              </div>
+              {r.squadComplete ? (
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: "#2f5d42", marginTop: 2 }}>SQUAD COMPLETE ✓</div>
+              ) : (
+                <div style={{ fontSize: 11.5, color: "#8a8272", marginTop: 2 }}>
+                  Still needed: {remaining.join(", ")}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       <div className="card">
         <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, marginBottom: 8 }}>Completion Status</div>

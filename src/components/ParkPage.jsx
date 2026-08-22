@@ -3,6 +3,8 @@ import { SingleChoiceGroup } from "./SingleChoiceGroup.jsx";
 import { ProgressIndicator } from "./ProgressIndicator.jsx";
 import { HeroBanner } from "./HeroBanner.jsx";
 import { RIDE_LABELS, HHN_LABELS } from "../data/uiLabels.js";
+import { buildParkReadiness } from "../lib/tripStats.js";
+import { FAMILY } from "../data/family.js";
 
 export function ParkPage({ park, votesByItem, myName, onSetLevel, onChooseSingle, onAdvance, advanceLabel }) {
   const labelSet = park.isHHN ? HHN_LABELS : RIDE_LABELS;
@@ -10,6 +12,8 @@ export function ParkPage({ park, votesByItem, myName, onSetLevel, onChooseSingle
   const votableItems = [];
   park.lands.forEach((land) => (land.items || []).forEach((i) => i.votable && votableItems.push(i)));
   const reviewedCount = votableItems.filter((i) => myName && votesByItem[i.id]?.[myName]).length;
+
+  const readiness = buildParkReadiness(votesByItem).find((r) => r.parkId === park.id);
 
   return (
     <div className="page">
@@ -45,6 +49,29 @@ export function ParkPage({ park, votesByItem, myName, onSetLevel, onChooseSingle
       )}
 
       {votableItems.length > 0 && <ProgressIndicator reviewedCount={reviewedCount} totalCount={votableItems.length} />}
+
+      {readiness && (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "6px 10px",
+            fontSize: 11.5,
+            color: "#6b6455",
+            margin: "2px 0 14px",
+          }}
+        >
+          <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, color: park.accent }}>
+            SQUAD STATUS — {readiness.completeCount} OF {FAMILY.length} COMPLETE
+          </span>
+          {FAMILY.map((name) => (
+            <span key={name}>
+              {name} {readiness.completeByPerson[name] ? "✓" : "○"}
+            </span>
+          ))}
+        </div>
+      )}
 
       {park.lands.map((land) => (
         <div key={land.name}>

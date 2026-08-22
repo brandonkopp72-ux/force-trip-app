@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { playIntelCue, playMissionAcceptedCue } from "../lib/audioEngine.js";
 
 const INTEL_WORDS = ["FLIGHTS", "LODGING", "TICKETS", "PARK INTEL", "MAPS", "CONDITIONS"];
 
@@ -31,6 +32,15 @@ export function MissionTransition({
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReduced(mq.matches);
+  }, []);
+
+  // Original synthesized cue, once per mount — dataBarrage (Intel Acquired)
+  // gets the digital sweep, the default variant (Mission Accepted) gets the
+  // resolving chime. No-op if muted or Web Audio is unavailable.
+  useEffect(() => {
+    if (variant === "dataBarrage") playIntelCue();
+    else playMissionAcceptedCue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const effectiveDuration = reduced ? 700 : duration;

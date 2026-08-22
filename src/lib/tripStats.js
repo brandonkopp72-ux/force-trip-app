@@ -107,3 +107,34 @@ export function buildCompletionStatus(votesByItem) {
   });
   return byPark;
 }
+
+/**
+ * Squad-level readiness per park, derived from the same completion counts
+ * above — a person is "complete" for a park only when they've reviewed
+ * every votable item in it (matching what ProgressIndicator already shows
+ * for the current user on ParkPage). Parks with zero votable items (e.g.
+ * the Friday departure day, which only has single-choice planning groups,
+ * not reviewable attractions) are naturally excluded, since they never
+ * appear in buildCompletionStatus's output at all. Dining/Rations is also
+ * intentionally excluded — there's no fixed "required item set" there the
+ * way there is for ride preferences, so a hard completion count wouldn't
+ * mean the same thing.
+ */
+export function buildParkReadiness(votesByItem) {
+  const completion = buildCompletionStatus(votesByItem);
+  return Object.entries(completion).map(([parkId, p]) => {
+    const completeByPerson = {};
+    FAMILY.forEach((name) => {
+      completeByPerson[name] = p.total > 0 && p.reviewedByPerson[name] === p.total;
+    });
+    const completeCount = FAMILY.filter((name) => completeByPerson[name]).length;
+    return {
+      parkId,
+      parkName: p.parkName,
+      total: p.total,
+      completeByPerson,
+      completeCount,
+      squadComplete: completeCount === FAMILY.length,
+    };
+  });
+}
