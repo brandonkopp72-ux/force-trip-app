@@ -130,7 +130,7 @@ export function StarfieldCrawl({
                 top: 0,
                 height: "100%",
                 transformOrigin: "50% 100%",
-                transform: "rotateX(-25deg)",
+                transform: "rotateX(25deg)",
                 transformStyle: "preserve-3d",
               }}
             >
