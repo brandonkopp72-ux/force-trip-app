@@ -104,14 +104,6 @@ export function CinematicIntro({ mode = "onboarding", onCtaClick, onExitComplete
     setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }, []);
 
-  // Original synthesized audio cues, keyed to stage changes. playX() itself
-  // is a no-op if muted or if Web Audio isn't available — never throws.
-  useEffect(() => {
-    if (stage === "hold-open") playStarfieldRumble();
-    if (stage === "crawl") playCrawlSwell();
-    if (stage === "cta") playCtaBloom();
-  }, [stage]);
-
   // Entrance cross-dissolve: double-rAF so the initial opacity:0 paints
   // before the transition to opacity:1 begins, guaranteeing the fade is
   // actually visible rather than skipped by same-frame batching.
@@ -122,6 +114,14 @@ export function CinematicIntro({ mode = "onboarding", onCtaClick, onExitComplete
     });
     timersRef.current.push(raf1);
   }, []);
+
+  // Original synthesized audio cues, keyed to stage changes. playX() itself
+  // is a no-op if muted or if Web Audio isn't available — never throws.
+  useEffect(() => {
+    if (stage === "hold-open") playStarfieldRumble();
+    if (stage === "crawl") playCrawlSwell();
+    if (stage === "cta") playCtaBloom();
+  }, [stage]);
 
   useEffect(() => {
     timersRef.current.forEach(clearTimeout);
@@ -153,8 +153,19 @@ export function CinematicIntro({ mode = "onboarding", onCtaClick, onExitComplete
     if (onCtaClick) onCtaClick(); // absent entirely in replay mode — see component doc above
   };
 
+  // Skip only shortcuts the crawl-reading time — it jumps straight to the
+  // same "cta" stage the timers would reach naturally. It never calls
+  // onCtaClick, never touches experiencePhase, and has no effect on
+  // mission-acceptance — the person still has to click the real CTA to
+  // actually proceed past the briefing.
+  const handleSkip = () => {
+    timersRef.current.forEach(clearTimeout);
+    setStage("cta");
+  };
+
   const starsOnly = stage === "dissolve" || stage === "hold-open";
   const showCta = stage === "cta" || stage === "exiting";
+  const showSkip = stage === "crawl";
 
   return (
     <div
@@ -200,6 +211,29 @@ export function CinematicIntro({ mode = "onboarding", onCtaClick, onExitComplete
           }}
         >
           {muted ? "🔇" : "🔊"}
+        </button>
+      )}
+
+      {showSkip && (
+        <button
+          onClick={handleSkip}
+          style={{
+            position: "absolute",
+            bottom: 18,
+            right: 18,
+            zIndex: 1,
+            background: "none",
+            border: "none",
+            fontFamily: "'Oswald', sans-serif",
+            fontSize: 12,
+            letterSpacing: "0.04em",
+            color: "#8a8272",
+            opacity: 0.6,
+            cursor: "pointer",
+            padding: 6,
+          }}
+        >
+          Skip →
         </button>
       )}
 

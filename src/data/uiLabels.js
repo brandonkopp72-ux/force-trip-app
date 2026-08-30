@@ -3,8 +3,8 @@
 import { LEVELS } from "./classificationConfig.js";
 
 export const RIDE_LABELS = {
-  [LEVELS.MUST_DO]: { icon: "⭐", label: "Must Do" },
-  [LEVELS.INTERESTED]: { icon: "❤️", label: "I'd Do It" },
+  [LEVELS.MUST_DO]: { icon: "❤️", label: "Must Do" },
+  [LEVELS.INTERESTED]: { icon: "👍", label: "I'd Do It" },
   [LEVELS.NOT_FOR_ME]: { icon: "🚫", label: "Not For Me" },
 };
 
@@ -15,8 +15,8 @@ export const DINING_LABELS = {
 };
 
 export const HHN_LABELS = {
-  [LEVELS.MUST_DO]: { icon: "⭐", label: "Can't Miss" },
-  [LEVELS.INTERESTED]: { icon: "❤️", label: "Want to See" },
+  [LEVELS.MUST_DO]: { icon: "❤️", label: "Can't Miss" },
+  [LEVELS.INTERESTED]: { icon: "👍", label: "Want to See" },
   [LEVELS.NOT_FOR_ME]: { icon: "🚫", label: "Skip Me" },
 };
 

@@ -1,8 +1,9 @@
 import { HeroBanner } from "./HeroBanner.jsx";
-import { classifyAllParks, buildCompletionStatus, buildParkReadiness } from "../lib/tripStats.js";
+import { classifyAllParks, buildCompletionStatus, buildParkReadiness, buildFridayReadiness, buildRationsReadiness } from "../lib/tripStats.js";
 import { computeNaturalSquadOverlap } from "../lib/classification.js";
 import { getAllVotableRideItems } from "../data/parks.js";
 import { FAMILY } from "../data/family.js";
+import { exportTripToExcel } from "../lib/exportExcel.js";
 
 function GroupSection({ title, items, renderDetail }) {
   if (items.length === 0) return null;
@@ -23,6 +24,8 @@ export function PlannerView({ votesByItem }) {
   const parkResults = classifyAllParks(votesByItem);
   const completion = buildCompletionStatus(votesByItem);
   const readiness = buildParkReadiness(votesByItem);
+  const friday = buildFridayReadiness(votesByItem);
+  const rations = buildRationsReadiness(votesByItem);
   const rideItems = getAllVotableRideItems();
   const rideItemIds = rideItems.map((i) => i.id);
 
@@ -38,6 +41,27 @@ export function PlannerView({ votesByItem }) {
   return (
     <div className="page">
       <HeroBanner accent="#4a1414" title="Planner View" subtitle="Interprets preferences, doesn't build a schedule" />
+
+      <button
+        onClick={() => exportTripToExcel(votesByItem)}
+        style={{
+          display: "block",
+          width: "100%",
+          marginBottom: 16,
+          fontFamily: "'Oswald', sans-serif",
+          fontWeight: 700,
+          fontSize: 13,
+          color: "#fff",
+          background: "#4a1414",
+          border: "none",
+          borderRadius: 10,
+          padding: "12px 16px",
+          cursor: "pointer",
+        }}
+      >
+        📊 Export to Excel
+      </button>
+
 
       <div className="card">
         <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, marginBottom: 10 }}>Mission Readiness</div>
@@ -61,6 +85,64 @@ export function PlannerView({ votesByItem }) {
             </div>
           );
         })}
+      </div>
+
+      <div className="card">
+        <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, marginBottom: 10 }}>
+          Other Mission Decisions
+        </div>
+
+        {/* Rations */}
+        <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #ece9e4" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <strong style={{ fontSize: 13.5 }}>Rations</strong>
+            <span style={{ fontSize: 12.5, color: "#6b6455" }}>
+              {rations.reviewedCount} / {FAMILY.length} reviewed
+            </span>
+          </div>
+          {rations.squadReviewed ? (
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: "#2f5d42", marginTop: 2 }}>SQUAD COMPLETE ✓</div>
+          ) : (
+            <div style={{ fontSize: 11.5, color: "#8a8272", marginTop: 2 }}>
+              Still needed: {FAMILY.filter((name) => !rations.reviewedByPerson[name]).join(", ")}
+            </div>
+          )}
+        </div>
+
+        {/* Friday Morning */}
+        <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #ece9e4" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <strong style={{ fontSize: 13.5 }}>{friday.label}</strong>
+            <span style={{ fontSize: 12.5, color: "#6b6455" }}>
+              {friday.decidedCount} / {FAMILY.length} decided
+            </span>
+          </div>
+          {friday.squadDecided ? (
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: "#2f5d42", marginTop: 2 }}>SQUAD DECIDED ✓</div>
+          ) : (
+            <div style={{ fontSize: 11.5, color: "#8a8272", marginTop: 2 }}>
+              Still needed: {FAMILY.filter((name) => !friday.decidedByPerson[name]).join(", ")}
+            </div>
+          )}
+          <div style={{ marginTop: 6, fontSize: 11.5, color: "#6b6455" }}>
+            {FAMILY.map((name) => (
+              <div key={name}>
+                {name} — {friday.choiceByPerson[name] ? friday.optionLabelById[friday.choiceByPerson[name]] : "Not decided"}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Ava's Birthday Dinner — locked, never a 6-person completion requirement */}
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <strong style={{ fontSize: 13.5 }}>Ava's Birthday Dinner</strong>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#8a6d1f" }}>🔒 LOCKED</span>
+          </div>
+          <div style={{ fontSize: 11.5, color: "#8a8272", marginTop: 2 }}>
+            Thursday, Oct 22 — fixed, not subject to a squad vote.
+          </div>
+        </div>
       </div>
 
       <div className="card">
