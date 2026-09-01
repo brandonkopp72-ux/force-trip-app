@@ -138,3 +138,63 @@ export function buildParkReadiness(votesByItem) {
     };
   });
 }
+
+/**
+ * Friday Morning readiness — a DIFFERENT decision type from park voting, so
+ * deliberately kept separate from buildParkReadiness rather than forced
+ * through it. A person counts as "decided" once they've selected exactly
+ * one of the existing four single-choice options. Option IDs are read
+ * live from the actual Friday/Departure park data (not hardcoded), so this
+ * stays correct if the choices themselves are ever edited.
+ */
+export function buildFridayReadiness(votesByItem) {
+  const fridayPark = PARKS.find((p) => p.isDeparture);
+  const group = fridayPark?.lands?.[0]?.singleChoiceGroups?.[0];
+  const optionIds = group ? group.options.map((o) => o.id) : [];
+  const optionLabelById = {};
+  (group?.options || []).forEach((o) => {
+    optionLabelById[o.id] = o.name;
+  });
+
+  const choiceByPerson = {};
+  const decidedByPerson = {};
+  FAMILY.forEach((name) => {
+    const chosenId = optionIds.find((id) => votesByItem[id]?.[name] === "chosen");
+    choiceByPerson[name] = chosenId || null;
+    decidedByPerson[name] = !!chosenId;
+  });
+
+  const decidedCount = FAMILY.filter((name) => decidedByPerson[name]).length;
+
+  return {
+    label: fridayPark?.park || "Friday Morning",
+    optionLabelById,
+    choiceByPerson,
+    decidedByPerson,
+    decidedCount,
+    squadDecided: decidedCount === FAMILY.length,
+  };
+}
+
+/**
+ * Rations readiness — also kept separate from buildParkReadiness since
+ * dining isn't a fixed-item-set attraction vote. A person counts as
+ * "reviewed" once every item in the live ALL_DINING list (sit-down + quick
+ * + dessert — never hardcoded counts) has a normal preference selection
+ * from them. Top Dinner Pick is deliberately NOT part of this check — it's
+ * bonus planning intelligence, not a gate on basic completion.
+ */
+export function buildRationsReadiness(votesByItem) {
+  const total = ALL_DINING.length;
+  const reviewedByPerson = {};
+  FAMILY.forEach((name) => {
+    reviewedByPerson[name] = total > 0 && ALL_DINING.every((d) => !!votesByItem[d.id]?.[name]);
+  });
+  const reviewedCount = FAMILY.filter((name) => reviewedByPerson[name]).length;
+  return {
+    total,
+    reviewedByPerson,
+    reviewedCount,
+    squadReviewed: reviewedCount === FAMILY.length,
+  };
+}
