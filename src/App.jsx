@@ -311,7 +311,7 @@ export default function App() {
         />
       )}
       {tab === "debrief" && !navigationLocked && <FamilyDebriefPage votesByItem={votes.votesByItem} />}
-      {tab === "planner" && !navigationLocked && <PlannerView votesByItem={votes.votesByItem} />}
+      {tab === "planner" && !navigationLocked && <PlannerView votesByItem={votes.votesByItem} topPicks={votes.topPicks} />}
 
       {activeTransition && (
         <MissionTransition

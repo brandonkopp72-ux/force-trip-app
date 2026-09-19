@@ -20,7 +20,7 @@ function GroupSection({ title, items, renderDetail }) {
   );
 }
 
-export function PlannerView({ votesByItem }) {
+export function PlannerView({ votesByItem, topPicks }) {
   const parkResults = classifyAllParks(votesByItem);
   const completion = buildCompletionStatus(votesByItem);
   const readiness = buildParkReadiness(votesByItem);
@@ -43,7 +43,7 @@ export function PlannerView({ votesByItem }) {
       <HeroBanner accent="#4a1414" title="Planner View" subtitle="Interprets preferences, doesn't build a schedule" />
 
       <button
-        onClick={() => exportTripToExcel(votesByItem)}
+        onClick={() => exportTripToExcel(votesByItem, topPicks)}
         style={{
           display: "block",
           width: "100%",
