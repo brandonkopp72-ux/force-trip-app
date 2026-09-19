@@ -1,26 +1,40 @@
+import { useState } from "react";
+import { V2Nav } from "./V2Nav.jsx";
+import { MissionLoadoutPage } from "./MissionLoadoutPage.jsx";
+import { MissionIntelPage } from "./MissionIntelPage.jsx";
+import { FiveDaysPage } from "./FiveDaysPage.jsx";
+
 /**
- * Phase 1 V2 shell only. This intentionally hosts just:
- *   - a single placeholder destination (Mission Loadout)
- *   - the way back to Final Approach
+ * The V2 shell — Phase 2. Owns which of the three real V2 screens
+ * (Mission Loadout / Mission Intel / Five Days) is showing, via a plain
+ * internal `screen` state; V2Nav renders the switcher and the return-to-
+ * Final-Approach link. Always re-enters on "loadout" — there's no
+ * cross-visit persistence requirement, and Mission Loadout is the natural
+ * landing spot right after the lightspeed transition.
  *
- * The countdown is no longer owned by this component — it's now persistent
- * V2 chrome rendered by App.jsx (V2CountdownBar) directly beneath the app
- * header, so it shows on Final Approach too, not just once you're in here.
+ * `flex: 1` (rather than a fixed/viewport-relative minHeight) is what
+ * makes this fill exactly the space left under the header + countdown
+ * bar; App.jsx's wrapper is the flex column that makes this possible —
+ * see the Final Approach / V2 branches there. Content can now be taller
+ * than the viewport (real cards, not a short placeholder), which is fine:
+ * the page scrolls normally, nothing here clips it.
  *
- * `flex: 1` (rather than a fixed/viewport-relative minHeight) is what makes
- * this fill exactly the space left under the header + countdown bar, so the
- * dark background reaches the bottom of the viewport even when this
- * placeholder content is short — App.jsx's wrapper is the flex column that
- * makes this possible; see the Final Approach / V2 branches there.
+ * The three screens share one small set of card-animation primitives
+ * (entrance fade/translate, gentle hover, a slow ambient glow pulse on
+ * Five Days' cards) injected ONCE here rather than duplicated per screen.
+ * All of it is skipped/neutralized under prefers-reduced-motion — each
+ * screen only applies the `animation` inline style when its own
+ * useReducedMotion() hook says motion is allowed, and the hover rule is a
+ * static, non-animated transform so it's unaffected either way.
  *
- * Real Mission Loadout content, Mission Intel, the Five Days/One Mission
- * hub, the Mission Rail, and any Monday-Friday day content are explicitly
- * OUT of scope for this phase — this only proves out the shell and the
- * return path. Later phases will replace the single placeholder block
- * below with real internal V2 navigation; nothing here is meant to be
- * load-bearing beyond that.
+ * The Mission Rail, day pages (Monday-Friday), attraction vote cards, and
+ * hard-time rail nodes are explicitly OUT of scope for this phase — Five
+ * Days links out to a placeholder, not real day content. See
+ * FiveDaysPage.jsx.
  */
 export function V2Shell({ onReturnToFinalApproach }) {
+  const [screen, setScreen] = useState("loadout");
+
   return (
     <div
       style={{
@@ -29,41 +43,34 @@ export function V2Shell({ onReturnToFinalApproach }) {
         color: "#fff",
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
-        padding: "20px 20px 60px",
       }}
     >
-      <button
-        onClick={onReturnToFinalApproach}
-        style={{
-          background: "none",
-          border: "none",
-          color: "#8fb3ff",
-          fontSize: 11.5,
-          fontFamily: "'Oswald', sans-serif",
-          letterSpacing: "0.04em",
-          cursor: "pointer",
-          padding: 4,
-        }}
-      >
-        ← FINAL APPROACH
-      </button>
+      <style>{`
+        @keyframes forceCardEnter {
+          0% { opacity: 0; transform: translateY(10px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes forceAmbientPulse {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
+        }
+        .force-v2-card {
+          transition: transform 0.18s ease, border-color 0.18s ease;
+        }
+        @media (hover: hover) {
+          .force-v2-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(143, 179, 255, 0.4);
+          }
+        }
+      `}</style>
 
-      <div style={{ marginTop: "16vh", textAlign: "center", maxWidth: 420 }}>
-        <div
-          style={{
-            fontFamily: "'Oswald', sans-serif",
-            fontSize: 11,
-            letterSpacing: "0.2em",
-            color: "#8fb3ff",
-            marginBottom: 10,
-          }}
-        >
-          MISSION LOADOUT
-        </div>
-        <div style={{ color: "#a9b4cc", fontSize: 14 }}>
-          Gear, logistics, and reference intel are staging here for a future briefing.
-        </div>
+      <V2Nav active={screen} onSelect={setScreen} onReturnToFinalApproach={onReturnToFinalApproach} />
+
+      <div style={{ flex: 1, width: "100%", maxWidth: 960, margin: "0 auto", padding: "0 16px 48px", boxSizing: "border-box" }}>
+        {screen === "loadout" && <MissionLoadoutPage />}
+        {screen === "intel" && <MissionIntelPage />}
+        {screen === "fiveDays" && <FiveDaysPage />}
       </div>
     </div>
   );
