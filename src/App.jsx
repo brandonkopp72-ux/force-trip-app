@@ -17,6 +17,7 @@ import { FinalApproachPage } from "./components/FinalApproachPage.jsx";
 import { LightspeedTransition } from "./components/LightspeedTransition.jsx";
 import { V2Shell } from "./components/V2Shell.jsx";
 import { V2CountdownBar } from "./components/V2CountdownBar.jsx";
+import { generateStarfield, STARFIELD_COUNT } from "./lib/starfield.js";
 import { PARKS } from "./data/parks.js";
 
 const ZONE_PARKS = PARKS.filter((p) => !p.isDeparture);
@@ -55,6 +56,14 @@ export default function App() {
   const [cinematicMounted, setCinematicMounted] = useState(false);
   const [replayMode, setReplayMode] = useState(false);
   const [activeTransition, setActiveTransition] = useState(null);
+
+  // One shared star array for the whole session, generated once (lazy
+  // initializer). Both FinalApproachPage's idle starfield and
+  // LightspeedTransition's streaks render from THIS SAME array — same
+  // anchor positions, thickness, and brightness — so clicking FINAL
+  // MISSION BRIEF reads as those exact stars accelerating rather than an
+  // unrelated starfield popping in. See src/lib/starfield.js.
+  const [starfieldStars] = useState(() => generateStarfield(STARFIELD_COUNT));
 
   const tabRefs = useRef({});
   const tabRowRef = useRef(null);
@@ -252,13 +261,17 @@ export default function App() {
           realtimeConnected={votes.realtimeConnected}
         />
         <V2CountdownBar />
-        <FinalApproachPage onFinalMissionBrief={handleEnterV2} onMissionArchives={handleEnterMissionArchives} />
+        <FinalApproachPage
+          stars={starfieldStars}
+          onFinalMissionBrief={handleEnterV2}
+          onMissionArchives={handleEnterMissionArchives}
+        />
       </div>
     );
   }
 
   if (experiencePhase === "lightspeed") {
-    return <LightspeedTransition onComplete={() => setExperiencePhase("v2")} />;
+    return <LightspeedTransition stars={starfieldStars} onComplete={() => setExperiencePhase("v2")} />;
   }
 
   if (experiencePhase === "v2") {

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { playLightspeedWhoosh } from "../lib/audioEngine.js";
+import { generateStarfield, STARFIELD_COUNT } from "../lib/starfield.js";
 
-const STAR_COUNT = 130;
 // Absolute time budget for the peak bloom, independent of total duration —
 // a short punctuation mark at arrival, not a scene of its own.
 const FLASH_MS = 120;
@@ -38,10 +37,22 @@ const V2_BACKGROUND = "radial-gradient(ellipse at 50% 0%, #10182c 0%, #05070f 55
  * fastest) — this is also what sells "increasing forward motion" rather
  * than every streak simply growing in place at the same rate.
  *
+ * `stars` (from src/lib/starfield.js, the same array Final Approach's idle
+ * starfield renders) supplies each star's anchor position, thickness, and
+ * brightness, so the exact dots visible on Final Approach are the ones
+ * that accelerate here — App.jsx generates the array once and passes it
+ * to both. Only the streak-specific fields (final length, mid-length,
+ * timing) are computed fresh here, derived from each star's distance from
+ * the vanishing point. A `stars` prop is optional (falls back to
+ * generating its own) so the component still works if ever used
+ * standalone.
+ *
+ * Silent by design — no audio cue plays on this transition.
+ *
  * Fixed duration in the 1.5s-2.5s range (default 2000ms). Respects
  * prefers-reduced-motion with a much shorter, simpler fade.
  */
-export function LightspeedTransition({ duration = 2000, onComplete }) {
+export function LightspeedTransition({ duration = 2000, stars: baseStars, onComplete }) {
   const [reduced, setReduced] = useState(false);
   const timerRef = useRef(null);
 
@@ -49,12 +60,12 @@ export function LightspeedTransition({ duration = 2000, onComplete }) {
     setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }, []);
 
-  useEffect(() => {
-    playLightspeedWhoosh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const effectiveDuration = reduced ? 500 : duration;
+
+  // Defensive fallback only — App.jsx always passes the shared Final
+  // Approach starfield in the real flow.
+  const fallbackStars = useMemo(() => generateStarfield(STARFIELD_COUNT), []);
+  const sourceStars = baseStars && baseStars.length > 0 ? baseStars : fallbackStars;
 
   useEffect(() => {
     timerRef.current = setTimeout(() => {
@@ -64,64 +75,41 @@ export function LightspeedTransition({ duration = 2000, onComplete }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveDuration]);
 
+  // Streak-specific fields only — anchor position, thickness, and
+  // brightness all come from sourceStars (shared with the idle Final
+  // Approach starfield) unchanged, so the geometry that made this read as
+  // a real starfield rather than a hub-and-spoke burst is untouched.
   const stars = useMemo(() => {
-    // vmax — comfortably past every screen edge on any aspect ratio, so
-    // the far end of the range still reaches (and rockets past) the
-    // corners rather than stopping short of them.
-    const maxRadius = 62;
-
-    return Array.from({ length: STAR_COUNT }, () => {
-      // Angle in the screen-space convention (0deg = east, clockwise,
-      // matching cos/sin with a Y-down axis) so the anchor offset and the
-      // rotated streak direction agree — CSS rotate(0) points "down"
-      // (south = 90deg in this convention), so the transform needs
-      // angle-90 to line the streak up with its own anchor ray.
-      const angle = Math.random() * 360;
-      const angleRad = (angle * Math.PI) / 180;
-      const rotateDeg = angle - 90;
-
-      // sqrt(random) samples radius uniformly by AREA (a plain uniform
-      // radius would bias density toward the center, since an annulus's
-      // area grows with r) — this is what makes the field genuinely fill
-      // the viewport at rest instead of clustering near the middle.
-      const startRadius = Math.sqrt(Math.random()) * maxRadius;
-      const distFactor = startRadius / maxRadius; // 0 at the vanishing point, 1 at/past the edge
-
-      const anchorLeftVmax = Math.cos(angleRad) * startRadius;
-      const anchorTopVmax = Math.sin(angleRad) * startRadius;
-
+    return sourceStars.map((s) => {
       // Final streak length (vmax, since the base box height is 1vmax and
       // this becomes its scaleY). Scales with distance from the vanishing
       // point — farther-out stars travel farther — with random spread on
       // top so streaks at similar distances still vary.
-      const finalScale = 5 + distFactor * 60 + Math.random() * 20;
+      const finalScale = 5 + s.distFactor * 60 + Math.random() * 20;
       const midScale = finalScale * (0.26 + Math.random() * 0.12);
-
-      const thickness = Math.random() < 0.12 ? 2 : 1; // a few slightly thicker "hero" streaks
-      const peakOpacity = 0.4 + distFactor * 0.4 + Math.random() * 0.2;
 
       // Individual timeline: farther-out stars also complete their travel
       // faster (shorter localDuration), reinforcing the same "streaking
       // past" sensation rather than just "growing longer." A random delay
       // means some streaks are already whipping past while others are
       // just starting.
-      const localDuration = effectiveDuration * (0.8 - distFactor * 0.35 + Math.random() * 0.15);
+      const localDuration = effectiveDuration * (0.8 - s.distFactor * 0.35 + Math.random() * 0.15);
       const delay = Math.random() * Math.max(0, effectiveDuration - localDuration);
 
       return {
-        rotateDeg,
-        anchorLeftVmax,
-        anchorTopVmax,
+        rotateDeg: s.rotateDeg,
+        anchorLeftVmax: s.anchorLeftVmax,
+        anchorTopVmax: s.anchorTopVmax,
+        thickness: s.thickness,
+        peakOpacity: s.peakOpacity,
         finalScale,
         midScale,
-        thickness,
-        peakOpacity,
         localDuration,
         delay,
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveDuration]);
+  }, [sourceStars, effectiveDuration]);
 
   // Bloom keyframe percentages, computed from an absolute ms budget so the
   // flash stays ~120ms of screen time regardless of total duration.
@@ -133,7 +121,7 @@ export function LightspeedTransition({ duration = 2000, onComplete }) {
     .map(
       (s, i) => `
       @keyframes lsStar${i} {
-        0% { opacity: 0; transform: rotate(${s.rotateDeg.toFixed(1)}deg) scaleY(0.3); }
+        0% { opacity: ${(s.peakOpacity * 0.22).toFixed(2)}; transform: rotate(${s.rotateDeg.toFixed(1)}deg) scaleY(0.4); }
         16% { opacity: ${(s.peakOpacity * 0.55).toFixed(2)}; transform: rotate(${s.rotateDeg.toFixed(1)}deg) scaleY(0.6); }
         70% { opacity: ${s.peakOpacity.toFixed(2)}; transform: rotate(${s.rotateDeg.toFixed(1)}deg) scaleY(${s.midScale.toFixed(1)}); }
         100% { opacity: ${s.peakOpacity.toFixed(2)}; transform: rotate(${s.rotateDeg.toFixed(1)}deg) scaleY(${s.finalScale.toFixed(1)}); }
