@@ -3,7 +3,21 @@ import { PARKS } from "../data/parks.js";
 import { FAMILY } from "../data/family.js";
 import { DINING_SITDOWN, DINING_QUICK, DINING_DESSERT } from "../data/dining.js";
 import { LEVELS } from "../data/classificationConfig.js";
-import { plainLabelFor } from "../data/uiLabels.js";
+
+// Plain-text labels for spreadsheet cells, defined locally so this export
+// doesn't depend on the app's in-UI icon/label mappings (which vary by
+// context — attractions vs. dining use different icons for the same
+// underlying LEVELS values). Kept to the three real vote values only;
+// anything else (including undefined/blank) renders as an empty cell.
+const PLAIN_PREFERENCE_LABELS = {
+  [LEVELS.MUST_DO]: "Must Do",
+  [LEVELS.INTERESTED]: "Interested",
+  [LEVELS.NOT_FOR_ME]: "Not for Me",
+};
+
+function plainLabelFor(value) {
+  return PLAIN_PREFERENCE_LABELS[value] || "";
+}
 
 // ---------------------------------------------------------------------------
 // Live dining catalog
