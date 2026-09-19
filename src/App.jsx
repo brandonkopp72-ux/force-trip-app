@@ -77,11 +77,23 @@ export default function App() {
   // actually resolved, so branch the phase transition here rather than
   // inside handleLogin's own return timing.
   //
-  // Accepted users now land on Final Approach (V2 Phase 1) rather than
-  // going straight into V1's tab navigation — the intentional path back
-  // into V1 is Mission Archives, reached FROM Final Approach.
+  // person is set BEFORE the mission_accepted fetch resolves (both in the
+  // localStorage auto-login effect and in login() itself), so there's a
+  // real intermediate render where person is truthy but missionAccepted
+  // hasn't come back from the server yet. Without the `!== null` check,
+  // that render would read the not-yet-loaded value as "not accepted" and
+  // route every login — including a returning, already-accepted person —
+  // into the first-time cinematic. Once there, this effect's own
+  // experiencePhase === "login" guard means it can never self-correct when
+  // the real value arrives a moment later. Waiting for missionAccepted to
+  // actually be known (useIdentity now starts it at null, not false)
+  // closes that window.
+  //
+  // Accepted users land on Final Approach (V2 Phase 1) rather than going
+  // straight into V1's tab navigation — the intentional path back into V1
+  // is Mission Archives, reached FROM Final Approach.
   useEffect(() => {
-    if (person && experiencePhase === "login") {
+    if (person && missionAccepted !== null && experiencePhase === "login") {
       if (missionAccepted) {
         setExperiencePhase("finalApproach");
       } else {

@@ -26,7 +26,14 @@ export function useIdentity() {
   const [pin, setPin] = useState(null);
   const [checking, setChecking] = useState(true);
   const [loginError, setLoginError] = useState("");
-  const [missionAccepted, setMissionAccepted] = useState(false);
+  // null = "not yet known" (fetch still in flight), as distinct from a real
+  // false. This distinction matters: person is set BEFORE the
+  // mission_accepted fetch resolves (see login() and the mount effect
+  // below), so there's a real intermediate render where person is truthy
+  // and this value hasn't come back yet. App.jsx's routing effect must be
+  // able to tell "still loading" apart from "genuinely not accepted" —
+  // starting at false made every login briefly look like a first-timer.
+  const [missionAccepted, setMissionAccepted] = useState(null);
 
   const fetchMissionAccepted = useCallback(async (name) => {
     try {
@@ -96,7 +103,7 @@ export function useIdentity() {
     localStorage.removeItem(STORAGE_KEY);
     setPerson(null);
     setPin(null);
-    setMissionAccepted(false);
+    setMissionAccepted(null); // back to "not yet known" for the next login
   }, []);
 
   // Called only once Accept Mission has been clicked AND the Mission
