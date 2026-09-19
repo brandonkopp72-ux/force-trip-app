@@ -16,6 +16,7 @@ import { IdentityHeader } from "./components/IdentityHeader.jsx";
 import { FinalApproachPage } from "./components/FinalApproachPage.jsx";
 import { LightspeedTransition } from "./components/LightspeedTransition.jsx";
 import { V2Shell } from "./components/V2Shell.jsx";
+import { V2CountdownBar } from "./components/V2CountdownBar.jsx";
 import { PARKS } from "./data/parks.js";
 
 const ZONE_PARKS = PARKS.filter((p) => !p.isDeparture);
@@ -222,13 +223,26 @@ export default function App() {
 
   // The original V1 top header (with LOG OUT) stays persistent across
   // Final Approach and V2 too — same IdentityHeader component the V1 shell
-  // below uses, not a lookalike copy. The V2 countdown docks directly
-  // beneath it inside V2Shell. The lightspeed transition is the one
-  // exception: it's a ~2s full-bleed streak effect with nothing to log out
-  // of mid-flight, so it renders with no header at all.
+  // below uses, not a lookalike copy. V2CountdownBar docks directly beneath
+  // it on BOTH screens (Final Approach and V2 itself), as persistent V2
+  // chrome rather than something V2Shell owns on its own.
+  //
+  // Both wrappers are flex columns with paddingBottom overridden to 0 (the
+  // app-shell class normally adds 40px) so the header, countdown bar, and
+  // page content are three stacked flex items filling the full viewport
+  // height between them — the page content uses flex:1 so its themed
+  // background reaches the bottom of the viewport even when the content
+  // itself is short, rather than leaving cream page background exposed
+  // beneath a shorter dark block. This is a layout fix scoped to these two
+  // V2-era wrappers only; V1's own .app-shell usage further below is
+  // untouched.
+  //
+  // The lightspeed transition is the one exception to all of this: it's a
+  // ~2s full-bleed streak effect with nothing to log out of or count down
+  // mid-flight, so it renders with no header/countdown at all.
   if (experiencePhase === "finalApproach") {
     return (
-      <div className="app-shell">
+      <div className="app-shell" style={{ display: "flex", flexDirection: "column", minHeight: "100vh", paddingBottom: 0 }}>
         <IdentityHeader
           person={person}
           initials={initials}
@@ -237,6 +251,7 @@ export default function App() {
           lastSyncedAt={votes.lastSyncedAt}
           realtimeConnected={votes.realtimeConnected}
         />
+        <V2CountdownBar />
         <FinalApproachPage onFinalMissionBrief={handleEnterV2} onMissionArchives={handleEnterMissionArchives} />
       </div>
     );
@@ -248,7 +263,7 @@ export default function App() {
 
   if (experiencePhase === "v2") {
     return (
-      <div className="app-shell">
+      <div className="app-shell" style={{ display: "flex", flexDirection: "column", minHeight: "100vh", paddingBottom: 0 }}>
         <IdentityHeader
           person={person}
           initials={initials}
@@ -257,6 +272,7 @@ export default function App() {
           lastSyncedAt={votes.lastSyncedAt}
           realtimeConnected={votes.realtimeConnected}
         />
+        <V2CountdownBar />
         <V2Shell onReturnToFinalApproach={handleReturnToFinalApproach} />
       </div>
     );

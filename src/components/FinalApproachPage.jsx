@@ -13,7 +13,7 @@ export function FinalApproachPage({ onFinalMissionBrief, onMissionArchives }) {
   return (
     <div
       style={{
-        minHeight: "70vh",
+        flex: 1,
         background: "radial-gradient(ellipse at 50% 20%, #10182c 0%, #05070f 60%, #000 100%)",
         color: "#fff",
         display: "flex",
@@ -48,7 +48,7 @@ export function FinalApproachPage({ onFinalMissionBrief, onMissionArchives }) {
         FINAL APPROACH
       </div>
       <div style={{ color: "#a9b4cc", fontSize: 14, maxWidth: 420, marginBottom: 40 }}>
-        The briefing is behind us. Choose your path.
+        The mission is accepted. Final preparations begin now.
       </div>
 
       <button
