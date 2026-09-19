@@ -904,3 +904,13 @@ export function getInformationalItems() {
   });
   return items;
 }
+
+// Built once at module load (PARKS is static) rather than re-flattened on
+// every lookup — Mission Rail day configs (Monday onward) reference
+// attractions by id and need to resolve them against this same list.
+const VOTABLE_ITEM_BY_ID = new Map(getAllVotableRideItems().map((item) => [item.id, item]));
+
+/** Resolves a votable ride/show id (e.g. "hs-rise") to its full PARKS item, or null if unknown. */
+export function getVotableItemById(id) {
+  return VOTABLE_ITEM_BY_ID.get(id) || null;
+}
