@@ -2,7 +2,7 @@ import { FAMILY } from "../data/family.js";
 import { PARKS, getAllVotableRideItems } from "../data/parks.js";
 import { ALL_DINING } from "../data/dining.js";
 import { classifyItem, computeNaturalSquadOverlap } from "./classification.js";
-import { LEVELS } from "../data/classificationConfig.js";
+import { LEVELS, isPositive } from "../data/classificationConfig.js";
 
 /**
  * Classifies every votable ride item across every park, grouped by park.
@@ -197,4 +197,87 @@ export function buildRationsReadiness(votesByItem) {
     reviewedCount,
     squadReviewed: reviewedCount === FAMILY.length,
   };
+}
+
+// ---------------------------------------------------------------------------
+// V2-only additive helpers (Phase 1). Neither of these changes any of the
+// exports above, and neither persists anything — both are pure derivations
+// from the same live votesByItem/topPicks V1 already owns.
+// ---------------------------------------------------------------------------
+
+/**
+ * Live positive-vote count for a single votable item (a ride OR a dining
+ * item — same LEVELS model either way). This is exactly the "X/6" badge
+ * V2 shows on attractions: no breakdown, just how many people are currently
+ * Must Do or Interested on this item, recomputed from votesByItem every time
+ * it's called so it can never drift into a stale snapshot.
+ */
+export function getPositiveVoteCount(itemId, votesByItem) {
+  const votersMap = votesByItem?.[itemId] || {};
+  return Object.values(votersMap).filter((level) => isPositive(level)).length;
+}
+
+/**
+ * Dynamic dining consensus ranking for V2 (Amendment 1). Reuses the exact
+ * scoring/tie-break formula established for the Rations Excel export
+ * (see computeDiningRanking in lib/exportExcel.js): Must Do = +2,
+ * Interested = +1, Not for Me = -1, blank = 0; ties broken by more Top
+ * Dinner Picks, then more Must Do votes, then higher positive %.
+ *
+ * Reads only existing dining items, votesByItem, and topPicks — no new
+ * data, no persistence. Defaults to sit-down (topPickEligible) items only,
+ * since that's what V2's "strongest current dinner pick" surfaces (Tuesday/
+ * Wednesday) are about — matching how Top Dinner Pick itself is scoped.
+ */
+export function getDiningConsensusRanking(votesByItem, topPicks, { onlyTopPickEligible = true } = {}) {
+  const pool = onlyTopPickEligible ? ALL_DINING.filter((d) => d.topPickEligible) : ALL_DINING;
+
+  const countTopPicksFor = (itemId) => {
+    if (!topPicks) return 0;
+    return Object.values(topPicks).filter((pickedId) => pickedId === itemId).length;
+  };
+
+  const scored = pool.map((item) => {
+    let mustDo = 0;
+    let interested = 0;
+    let notForMe = 0;
+
+    FAMILY.forEach((person) => {
+      const value = votesByItem?.[item.id]?.[person];
+      if (value === LEVELS.MUST_DO) mustDo += 1;
+      else if (value === LEVELS.INTERESTED) interested += 1;
+      else if (value === LEVELS.NOT_FOR_ME) notForMe += 1;
+    });
+
+    const totalResponses = mustDo + interested + notForMe;
+    const positiveCount = mustDo + interested;
+    const positivePercentage = totalResponses > 0 ? positiveCount / totalResponses : 0;
+    const topPickCount = item.topPickEligible ? countTopPicksFor(item.id) : 0;
+    const consensusScore = mustDo * 2 + interested * 1 + notForMe * -1;
+
+    return {
+      item,
+      mustDo,
+      interested,
+      notForMe,
+      totalResponses,
+      positiveCount,
+      positivePercentage,
+      topPickCount,
+      consensusScore,
+    };
+  });
+
+  scored.sort((a, b) => {
+    if (b.consensusScore !== a.consensusScore) return b.consensusScore - a.consensusScore;
+    if (b.topPickCount !== a.topPickCount) return b.topPickCount - a.topPickCount;
+    if (b.mustDo !== a.mustDo) return b.mustDo - a.mustDo;
+    return b.positivePercentage - a.positivePercentage;
+  });
+
+  scored.forEach((row, index) => {
+    row.rank = index + 1;
+  });
+
+  return scored;
 }

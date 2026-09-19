@@ -171,3 +171,48 @@ export function playMissionAcceptedCue() {
     });
   });
 }
+
+/** Rapid rising "hyperspace jump" whoosh for the Lightspeed transition —
+ * a fast upward pitch sweep layered with a short filtered-noise streak,
+ * built the same way as every other cue here: synthesized only, no
+ * external assets. */
+export function playLightspeedWhoosh() {
+  safePlay((c, out) => {
+    const now = c.currentTime;
+
+    // Rising sweep — the "engaging the hyperdrive" surge.
+    const osc = c.createOscillator();
+    const oscGain = c.createGain();
+    osc.type = "sawtooth";
+    oscGain.gain.value = 0;
+    osc.connect(oscGain).connect(out);
+    osc.frequency.setValueAtTime(90, now);
+    osc.frequency.exponentialRampToValueAtTime(1100, now + 1.4);
+    oscGain.gain.linearRampToValueAtTime(0.14, now + 0.3);
+    oscGain.gain.linearRampToValueAtTime(0.08, now + 1.1);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 1.7);
+    osc.start(now);
+    osc.stop(now + 1.75);
+
+    // Filtered noise streak underneath, for the "rushing past stars" texture.
+    const bufferSize = Math.floor(c.sampleRate * 1.6);
+    const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    const noise = c.createBufferSource();
+    noise.buffer = buffer;
+    const filter = c.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(400, now);
+    filter.frequency.exponentialRampToValueAtTime(4000, now + 1.4);
+    filter.Q.value = 0.7;
+    const noiseGain = c.createGain();
+    noiseGain.gain.value = 0;
+    noise.connect(filter).connect(noiseGain).connect(out);
+    noiseGain.gain.linearRampToValueAtTime(0.1, now + 0.25);
+    noiseGain.gain.linearRampToValueAtTime(0.05, now + 1.0);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 1.7);
+    noise.start(now);
+    noise.stop(now + 1.75);
+  });
+}

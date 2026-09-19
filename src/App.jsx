@@ -12,7 +12,10 @@ import { ResourcesPage } from "./components/ResourcesPage.jsx";
 import { MissionProfilePage } from "./components/MissionProfilePage.jsx";
 import { FamilyDebriefPage } from "./components/FamilyDebriefPage.jsx";
 import { PlannerView } from "./components/PlannerView.jsx";
-import { SyncStatus } from "./components/SyncStatus.jsx";
+import { IdentityHeader } from "./components/IdentityHeader.jsx";
+import { FinalApproachPage } from "./components/FinalApproachPage.jsx";
+import { LightspeedTransition } from "./components/LightspeedTransition.jsx";
+import { V2Shell } from "./components/V2Shell.jsx";
 import { PARKS } from "./data/parks.js";
 
 const ZONE_PARKS = PARKS.filter((p) => !p.isDeparture);
@@ -36,10 +39,17 @@ export default function App() {
 
   // Coarse experience state — App owns ONLY where the user is in the overall
   // flow. CinematicIntro owns all of its own internal animation timing.
-  //   "login"     -> IdentityGate
-  //   "cinematic" -> CinematicIntro overlay (briefing content already mounted underneath)
-  //   "briefing"  -> Resources tab active, all other navigation locked
-  //   "planning"  -> normal, unrestricted tab navigation
+  //   "login"        -> IdentityGate
+  //   "cinematic"    -> CinematicIntro overlay (briefing content already mounted underneath)
+  //   "briefing"     -> Resources tab active, all other navigation locked
+  //   "planning"     -> the original V1 experience: normal, unrestricted tab
+  //                     navigation. Reached ONLY via Mission Archives now —
+  //                     see the routing effect below.
+  //   "finalApproach" -> the V2-era accepted-user landing page (V2 Phase 1).
+  //                      Offers FINAL MISSION BRIEF (-> "lightspeed") and
+  //                      MISSION ARCHIVES (-> "planning", replay overlay).
+  //   "lightspeed"    -> one-shot streak transition, then -> "v2".
+  //   "v2"            -> the new V2 shell (countdown + placeholder destination).
   const [experiencePhase, setExperiencePhase] = useState("login");
   const [cinematicMounted, setCinematicMounted] = useState(false);
   const [replayMode, setReplayMode] = useState(false);
@@ -66,10 +76,14 @@ export default function App() {
   // missionAccepted can only become known truthfully once login has
   // actually resolved, so branch the phase transition here rather than
   // inside handleLogin's own return timing.
+  //
+  // Accepted users now land on Final Approach (V2 Phase 1) rather than
+  // going straight into V1's tab navigation — the intentional path back
+  // into V1 is Mission Archives, reached FROM Final Approach.
   useEffect(() => {
     if (person && experiencePhase === "login") {
       if (missionAccepted) {
-        setExperiencePhase("planning");
+        setExperiencePhase("finalApproach");
       } else {
         setExperiencePhase("cinematic");
         setCinematicMounted(true);
@@ -120,6 +134,9 @@ export default function App() {
   // markAcceptance:true tags this specific transition so the onComplete
   // handler below knows to persist mission-acceptance exactly here — not
   // for the Intel Acquired transition, which shares the same component.
+  // onCompletePhase is explicit here (rather than relying on the default
+  // fallback below) so a first-time acceptance lands on Final Approach,
+  // same as every returning login does.
   const handleAcceptMission = () => {
     if (activeTransition) return; // re-entrancy guard
     setActiveTransition({
@@ -129,6 +146,7 @@ export default function App() {
       duration: 3600,
       nextTab: ZONE_PARKS[0].id,
       markAcceptance: true,
+      onCompletePhase: "finalApproach",
     });
   };
 
@@ -141,6 +159,35 @@ export default function App() {
     unlockAudio(); // this click is its own user gesture
     setReplayMode(true);
     setCinematicMounted(true);
+  };
+
+  // Mission Archives (Final Approach -> V1). Per the approved plan this
+  // should feel like RETURNING to the original experience, not opening a
+  // generic tab page — so it enters the V1 shell ("planning") AND
+  // automatically invokes the existing replay overlay, reusing
+  // handleReplayMissionOpening verbatim. It deliberately does nothing else:
+  // no markMissionAccepted call, no activeTransition, no tab reset (tab is
+  // only ever force-reset when entering "briefing", which this never does)
+  // — so votes, mission-acceptance, and navigation locking are all
+  // untouched, and whatever tab the person left V1 on is still there once
+  // the replay closes.
+  const handleEnterMissionArchives = () => {
+    setExperiencePhase("planning");
+    handleReplayMissionOpening();
+  };
+
+  // Final Approach -> lightspeed -> v2. Just a phase change; the
+  // LightspeedTransition component itself owns the one-shot visual/audio
+  // and calls back into setExperiencePhase("v2") on completion (see render).
+  const handleEnterV2 = () => {
+    setExperiencePhase("lightspeed");
+  };
+
+  // The small return-to-Final-Approach affordance, reachable from both
+  // V1/Mission Archives (the header link below) and V2 (V2Shell). Just a
+  // phase change — doesn't touch tab, votes, or mission-acceptance.
+  const handleReturnToFinalApproach = () => {
+    setExperiencePhase("finalApproach");
   };
 
   // Keep the active tab scrolled to the center of the tab bar whenever it changes.
@@ -160,6 +207,49 @@ export default function App() {
   }
 
   const initials = person.slice(0, 2).toUpperCase();
+
+  // The original V1 top header (with LOG OUT) stays persistent across
+  // Final Approach and V2 too — same IdentityHeader component the V1 shell
+  // below uses, not a lookalike copy. The V2 countdown docks directly
+  // beneath it inside V2Shell. The lightspeed transition is the one
+  // exception: it's a ~2s full-bleed streak effect with nothing to log out
+  // of mid-flight, so it renders with no header at all.
+  if (experiencePhase === "finalApproach") {
+    return (
+      <div className="app-shell">
+        <IdentityHeader
+          person={person}
+          initials={initials}
+          onLogout={logout}
+          syncStatus={votes.syncStatus}
+          lastSyncedAt={votes.lastSyncedAt}
+          realtimeConnected={votes.realtimeConnected}
+        />
+        <FinalApproachPage onFinalMissionBrief={handleEnterV2} onMissionArchives={handleEnterMissionArchives} />
+      </div>
+    );
+  }
+
+  if (experiencePhase === "lightspeed") {
+    return <LightspeedTransition onComplete={() => setExperiencePhase("v2")} />;
+  }
+
+  if (experiencePhase === "v2") {
+    return (
+      <div className="app-shell">
+        <IdentityHeader
+          person={person}
+          initials={initials}
+          onLogout={logout}
+          syncStatus={votes.syncStatus}
+          lastSyncedAt={votes.lastSyncedAt}
+          realtimeConnected={votes.realtimeConnected}
+        />
+        <V2Shell onReturnToFinalApproach={handleReturnToFinalApproach} />
+      </div>
+    );
+  }
+
   const currentPark = PARKS.find((p) => p.id === tab);
 
   // Navigation is locked to Resources for the whole briefing phase — the
@@ -172,21 +262,20 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <div className="header">
-        <div>
-          <div className="eyebrow">F.O.R.C.E. — Family Of Rebels Creating Experiences</div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-          <div className="identity-badge">
-            <span className="avatar">{initials}</span>
-            {person}
-            <button className="switch-link" onClick={logout} style={{ marginLeft: 6 }}>
-              Not {person}?
-            </button>
-          </div>
-          <SyncStatus syncStatus={votes.syncStatus} lastSyncedAt={votes.lastSyncedAt} realtimeConnected={votes.realtimeConnected} />
-        </div>
-      </div>
+      {/* Same IdentityHeader component now used above Final Approach and V2 —
+          showReturnLink only applies in Mission Archives (the only way
+          "planning" is reached now); it's a quiet text link, not another
+          row of nav buttons in this header. */}
+      <IdentityHeader
+        person={person}
+        initials={initials}
+        onLogout={logout}
+        showReturnLink={experiencePhase === "planning"}
+        onReturnToFinalApproach={handleReturnToFinalApproach}
+        syncStatus={votes.syncStatus}
+        lastSyncedAt={votes.lastSyncedAt}
+        realtimeConnected={votes.realtimeConnected}
+      />
 
       <div className="tab-row" ref={tabRowRef} style={{ opacity: navigationLocked ? 0.6 : 1 }}>
         <TabButton
@@ -318,7 +407,7 @@ export default function App() {
           {...activeTransition}
           onComplete={() => {
             const next = activeTransition.nextTab;
-            const nextPhase = activeTransition.onCompletePhase || "planning";
+            const nextPhase = activeTransition.onCompletePhase || "finalApproach";
             if (activeTransition.markAcceptance) markMissionAccepted();
             setActiveTransition(null);
             setExperiencePhase(nextPhase);
