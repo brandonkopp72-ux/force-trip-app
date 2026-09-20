@@ -15,6 +15,9 @@ export const MISSION_DAYS = [
     parkLines: ["HOLLYWOOD STUDIOS", "GALAXY'S EDGE"],
     missionIdentity: "INFILTRATE BATUU",
     accent: "#ffb84d",
+    // Purely decorative — Phase 5 hub-card polish, for at-a-glance mission
+    // identity. Not used anywhere content/data-driven.
+    icon: "🌌",
     // space / desert / stars / industrial amber
     background:
       "radial-gradient(circle at 22% 24%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 1.2%), " +
@@ -30,6 +33,7 @@ export const MISSION_DAYS = [
     parkLines: ["ISLANDS OF ADVENTURE"],
     missionIdentity: "ADVENTURE BEYOND THE GATES",
     accent: "#e0b25c",
+    icon: "🦖",
     // wizarding / jungle / adventure atmosphere
     background:
       "radial-gradient(circle at 30% 115%, rgba(224,178,92,0.28) 0%, rgba(224,178,92,0) 45%), " +
@@ -41,6 +45,7 @@ export const MISSION_DAYS = [
     parkLines: ["EPIC UNIVERSE"],
     missionIdentity: "ENTER THE PORTALS",
     accent: "#b39dff",
+    icon: "🌀",
     // cosmic / portal / futuristic
     background:
       "radial-gradient(circle at 50% 42%, rgba(180,140,255,0.5) 0%, rgba(120,90,220,0.22) 18%, rgba(20,10,50,0) 42%), " +
@@ -52,6 +57,7 @@ export const MISSION_DAYS = [
     parkLines: ["UNIVERSAL STUDIOS", "AVA'S BIRTHDAY", "HALLOWEEN HORROR NIGHTS"],
     missionIdentity: "DOUBLE FEATURE",
     accent: "#ff6b57",
+    icon: "🎭",
     // theme-park energy transitioning toward darker horror tones
     background: "linear-gradient(180deg, #3a1414 0%, #260d13 40%, #140609 70%, #0a0508 100%)",
   },
@@ -61,6 +67,7 @@ export const MISSION_DAYS = [
     parkLines: ["FINAL MORNING", "EXTRACTION"],
     missionIdentity: "EXTRACTION",
     accent: "#e8b98f",
+    icon: "🌅",
     // calmer travel / sunrise / extraction — deliberately less saturated than the other four
     background: "linear-gradient(160deg, #232838 0%, #3a3542 35%, #6e5a5a 62%, #b98a70 82%, #e0ab84 100%)",
   },

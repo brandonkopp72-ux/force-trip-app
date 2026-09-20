@@ -240,9 +240,21 @@ function DiningConsensusBlock({ block, votesByItem, topPicks }) {
  * link for that house's name rather than a fabricated specific URL — real,
  * always-resolves, and easy for Brandon to swap for a curated link later.
  */
+// Phase 5 polish: a visually cordoned-off "warning zone" (tinted background +
+// dashed border, matching the same treatment MissionIntelPage.jsx uses for
+// its own spoiler section) so this reads unmistakably as a different kind
+// of link — spoilers, not a promotional preview — rather than blending into
+// the rest of the day's content blocks.
 function LinkListBlock({ block }) {
   return (
-    <div>
+    <div
+      style={{
+        background: "rgba(255,107,87,0.06)",
+        border: "1px dashed rgba(255,107,87,0.35)",
+        borderRadius: 12,
+        padding: "14px 14px 12px",
+      }}
+    >
       {block.heading && <div style={{ ...labelText, marginBottom: 6, color: "#ff8a7a" }}>{block.heading}</div>}
       {block.warning && <div style={{ fontSize: 12.5, fontStyle: "italic", color: "#d8b98f", marginBottom: 10, lineHeight: 1.5 }}>{block.warning}</div>}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -256,8 +268,8 @@ function LinkListBlock({ block }) {
               fontSize: 13,
               color: "#8fb3ff",
               textDecoration: "none",
-              background: "rgba(255,255,255,0.025)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.1)",
               borderRadius: 10,
               padding: "9px 12px",
             }}

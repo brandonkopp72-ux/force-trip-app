@@ -39,7 +39,9 @@ export const TUESDAY_MISSION = {
       kind: "flexible",
       id: "hogsmeade-ops",
       heading: "HOGSMEADE OPERATIONS",
-      tint: "#8a9e6a",
+      // Cool stone/mist blue-gray — Phase 5 day-theming polish (tint only;
+      // no structure/content/time change).
+      tint: "#7d92ad",
       timeFromParkHours: "open",
       blocks: [
         {
@@ -92,7 +94,10 @@ export const TUESDAY_MISSION = {
       kind: "flexible",
       id: "adventure-ops",
       heading: "ADVENTURE OPERATIONS",
-      tint: "#c9a24d",
+      // Jungle green with an energetic edge, covering both the Marvel/action
+      // major objectives and the Jurassic-area secondary content this node
+      // holds — Phase 5 day-theming polish (tint only).
+      tint: "#3f9e7a",
       blocks: [
         {
           type: "text",
@@ -131,7 +136,8 @@ export const TUESDAY_MISSION = {
       kind: "flexible",
       id: "citywalk-evening",
       heading: "CITYWALK EVENING",
-      tint: "#5a4a7a",
+      // Warm evening/neon energy — Phase 5 day-theming polish (tint only).
+      tint: "#e0704f",
       blocks: [
         {
           type: "diningConsensus",

@@ -99,7 +99,10 @@ function RailMarker({ kind, tint, reduced }) {
               inset: -9,
               borderRadius: "50%",
               background: color,
-              animation: "missionRailPulse 3.8s ease-in-out infinite",
+              // Phase 5 polish: a calmer pulse — smaller amplitude (was
+              // 0.85→1.55) and a touch slower, so a locked reservation reads
+              // as "gently alive" rather than an alert.
+              animation: "missionRailPulse 4.2s ease-in-out infinite",
             }}
           />
         )}
@@ -138,7 +141,11 @@ function RailMarker({ kind, tint, reduced }) {
   if (kind === "entertainment") {
     // A small star glyph with a STEADY glow — deliberately not the
     // "hard" node's animated pulse, per the spec's "visually distinctive
-    // enough to notice, but NOT a locked/pulsing reservation node."
+    // enough to notice, but NOT a locked/pulsing reservation node." Phase 5
+    // polish: a static dark ring (no animation) matches the "sits into the
+    // rail" separation the hard/endpoint markers already have, so this
+    // reads as an equally deliberate third marker style rather than a bare
+    // glyph floating on the line.
     return (
       <span
         aria-hidden="true"
@@ -147,6 +154,8 @@ function RailMarker({ kind, tint, reduced }) {
           height: 16,
           flexShrink: 0,
           marginTop: 0,
+          borderRadius: "50%",
+          boxShadow: `0 0 0 3px rgba(5,7,15,0.9), 0 0 10px ${color}55`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -211,7 +220,7 @@ function RailNodeRow({ node, nextTint, reduced, isLast }) {
         )}
       </div>
 
-      <div style={{ minWidth: 0, paddingLeft: 16, paddingBottom: isLast ? 4 : 40 }}>
+      <div style={{ minWidth: 0, paddingLeft: 18, paddingBottom: isLast ? 4 : 40 }}>
         <div
           style={{
             position: "relative",
@@ -247,8 +256,8 @@ export function MissionRail({ nodes }) {
     <div style={{ width: "100%" }}>
       <style>{`
         @keyframes missionRailPulse {
-          0%, 100% { opacity: 0.28; transform: scale(0.85); }
-          50% { opacity: 0.05; transform: scale(1.55); }
+          0%, 100% { opacity: 0.26; transform: scale(0.88); }
+          50% { opacity: 0.06; transform: scale(1.35); }
         }
       `}</style>
       {nodes.map((node, i) => (

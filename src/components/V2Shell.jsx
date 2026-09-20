@@ -63,11 +63,22 @@ export function V2Shell({ onReturnToFinalApproach, votesByItem, topPicks }) {
             border-color: rgba(143, 179, 255, 0.4);
           }
         }
+        /* Phase 5 polish: a gentle tap state for touch devices, distinct
+           from (and not reliant on) the hover-only rule above. */
+        .force-v2-card:active {
+          transform: scale(0.985);
+        }
       `}</style>
 
       <V2Nav active={screen} onSelect={setScreen} onReturnToFinalApproach={onReturnToFinalApproach} />
 
-      <div style={{ flex: 1, width: "100%", maxWidth: 960, margin: "0 auto", padding: "0 16px 48px", boxSizing: "border-box" }}>
+      {/* Phase 5 desktop polish: a modest maxWidth bump (960 -> 1040) gives
+          the Loadout/Intel/Five-Days card grids room for a bit more
+          breathing room and, on Five Days/Intel, sometimes an extra column
+          on wide screens — without making Mission Rail's own content
+          column (which stays readable/focused per spec) uncomfortably
+          wide. */}
+      <div style={{ flex: 1, width: "100%", maxWidth: 1040, margin: "0 auto", padding: "0 16px 48px", boxSizing: "border-box" }}>
         {screen === "loadout" && <MissionLoadoutPage />}
         {screen === "intel" && <MissionIntelPage />}
         {screen === "fiveDays" && <FiveDaysPage votesByItem={votesByItem} topPicks={topPicks} />}

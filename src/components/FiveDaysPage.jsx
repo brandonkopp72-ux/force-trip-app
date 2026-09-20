@@ -47,7 +47,7 @@ function DayCard({ day, index, reduced, onSelect }) {
         position: "relative",
         background: withScrim(day.background),
         padding: "22px 20px",
-        minHeight: 150,
+        minHeight: 165,
         display: "flex",
         flexDirection: "column",
         justifyContent: "flex-end",
@@ -67,6 +67,22 @@ function DayCard({ day, index, reduced, onSelect }) {
             pointerEvents: "none",
           }}
         />
+      )}
+
+      {day.icon && (
+        <span
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            top: 14,
+            right: 16,
+            fontSize: 22,
+            opacity: 0.8,
+            filter: "drop-shadow(0 0 6px rgba(0,0,0,0.5))",
+          }}
+        >
+          {day.icon}
+        </span>
       )}
 
       <div style={{ position: "relative" }}>
@@ -149,7 +165,15 @@ export function FiveDaysPage({ votesByItem, topPicks }) {
     const mission = MISSION_PAGES[activeDayId];
     if (mission) {
       return (
-        <MissionDayPage mission={mission} votesByItem={votesByItem} topPicks={topPicks} onBack={() => setActiveDayId(null)} />
+        <MissionDayPage
+          mission={mission}
+          votesByItem={votesByItem}
+          topPicks={topPicks}
+          onBack={() => setActiveDayId(null)}
+          // Phase 5's daily navigation dock reuses this exact activeDayId
+          // state to switch days directly — no separate navigation state.
+          onNavigateDay={setActiveDayId}
+        />
       );
     }
     const day = MISSION_DAYS.find((d) => d.id === activeDayId);

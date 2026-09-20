@@ -69,10 +69,23 @@ function IntelCard({ item, index, reduced }) {
       <div
         style={{
           background: item.mediaGradient,
-          padding: "26px 18px",
+          padding: "28px 20px 24px",
           position: "relative",
+          overflow: "hidden",
         }}
       >
+        {/* Phase 5 polish: a soft bottom scrim so the media area reads as
+            one intentional "media panel" that eases into the card body
+            below, rather than a flat color block with a hard edge. */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(to bottom, rgba(5,7,15,0) 55%, rgba(5,7,15,0.32) 100%)",
+            pointerEvents: "none",
+          }}
+        />
         <div
           style={{
             fontFamily: "'Oswald', sans-serif",
@@ -108,8 +121,10 @@ function IntelCard({ item, index, reduced }) {
           <div
             style={{
               marginTop: 16,
-              paddingTop: 14,
-              borderTop: "1px dashed rgba(255,107,87,0.3)",
+              padding: "14px 14px 12px",
+              background: "rgba(255,107,87,0.06)",
+              border: "1px dashed rgba(255,107,87,0.35)",
+              borderRadius: 10,
             }}
           >
             <div
@@ -184,7 +199,7 @@ export function MissionIntelPage() {
         <div style={{ fontSize: 12, letterSpacing: "0.2em", color: "#8fb3ff", marginTop: 6 }}>KNOW THE BATTLEFIELD</div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 18 }}>
         {MISSION_INTEL_ITEMS.map((item, i) => (
           <IntelCard key={item.id} item={item} index={i} reduced={reduced} />
         ))}

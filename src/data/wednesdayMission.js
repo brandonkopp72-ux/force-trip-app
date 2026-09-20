@@ -39,7 +39,11 @@ export const WEDNESDAY_MISSION = {
       kind: "flexible",
       id: "snw-transport",
       heading: "SUPER NINTENDO WORLD",
-      tint: "#d94f4f",
+      // Cosmic blue, keeping this land inside the same deep-blue/violet
+      // family as the rest of Wednesday's "most luminous/cosmic" page
+      // rather than an unrelated red — Phase 5 day-theming polish (tint
+      // only; no structure/content/time change).
+      tint: "#5fa8d9",
       timeFromParkHours: "open",
       blocks: [
         {

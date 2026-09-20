@@ -1,6 +1,10 @@
+import { useEffect } from "react";
 import { getParkHours, formatEveningWindow } from "../data/parkHours.js";
+import { getDayPageBackground } from "../data/dayThemes.js";
+import { useReducedMotion } from "../hooks/useReducedMotion.js";
 import { RailBlock, HardNodeContent, EntertainmentNodeContent } from "./RailBlocks.jsx";
 import { MissionRail } from "./MissionRail.jsx";
+import { DayNavDock } from "./DayNavDock.jsx";
 
 /**
  * Generic Mission Day orchestrator — Monday is the first day wired to it,
@@ -45,12 +49,31 @@ import { MissionRail } from "./MissionRail.jsx";
  * Tuesday-Friday reuse this component with their own day configs. `topPicks`
  * is additive (Phase 4) — it's only read by the "diningConsensus" block type
  * Tuesday/Wednesday use, via RailBlock; Monday's blocks never reference it.
+ *
+ * Phase 5 additions (visual/navigation polish only — no rail structure,
+ * times, or content changed):
+ *   - a per-day page background (dayThemes.js), applied behind this whole
+ *     page and stretching naturally to its full content height so it reads
+ *     as "progressive" while scrolling with zero JS/scroll-jacking.
+ *   - a sticky bottom day-navigation dock (DayNavDock.jsx). `onNavigateDay`
+ *     is FiveDaysPage's existing `activeDayId` setter passed straight
+ *     through — this component creates no navigation state of its own.
+ *   - since switching days reuses this same component instance (only the
+ *     `mission` prop changes, no remount), an effect resets scroll to the
+ *     top of the new day's rail on every `mission.id` change, per the
+ *     spec's "do not preserve the previous day's scroll position."
  */
-export function MissionDayPage({ mission, votesByItem, topPicks, onBack }) {
+export function MissionDayPage({ mission, votesByItem, topPicks, onBack, onNavigateDay }) {
   const hours = getParkHours(mission.parkId);
   const { operatingIntel } = mission;
   const secondary = mission.secondaryOperatingIntel;
   const secondaryHours = secondary ? getParkHours(secondary.parkId) : null;
+  const reduced = useReducedMotion();
+  const pageBackground = getDayPageBackground(mission.id);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [mission.id]);
 
   const railNodes = mission.rail.map((node) => {
     let time = node.time;
@@ -84,7 +107,29 @@ export function MissionDayPage({ mission, votesByItem, topPicks, onBack }) {
   });
 
   return (
-    <div style={{ padding: "18px 0 12px" }}>
+    <div
+      style={{
+        // Bottom padding is boosted (vs. the 12px every other V2 screen
+        // uses) so the sticky DayNavDock never covers the last rail node —
+        // plus room for phones with a home-indicator safe area.
+        padding: "18px 0 calc(96px + env(safe-area-inset-bottom, 0px))",
+        background: pageBackground || undefined,
+        borderRadius: pageBackground ? 16 : undefined,
+        position: "relative",
+      }}
+    >
+      {!reduced && (
+        <style>{`
+          @keyframes forceDayPageEnter {
+            0% { opacity: 0; transform: translateY(8px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+      )}
+      {/* Keying on mission.id restarts this fade-in each time the day
+          changes via the nav dock, even though MissionDayPage itself is
+          never remounted (only its `mission` prop changes). */}
+      <div key={mission.id} style={!reduced ? { animation: "forceDayPageEnter 360ms ease-out both" } : undefined}>
       <button
         onClick={onBack}
         style={{
@@ -154,6 +199,11 @@ export function MissionDayPage({ mission, votesByItem, topPicks, onBack }) {
       </div>
 
       <MissionRail nodes={railNodes} />
+      </div>
+
+      {onNavigateDay && (
+        <DayNavDock currentDayId={mission.id} onNavigateDay={onNavigateDay} onFiveDays={onBack} />
+      )}
     </div>
   );
 }

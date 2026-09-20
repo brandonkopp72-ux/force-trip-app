@@ -5,7 +5,10 @@ const cardBaseStyle = {
   background: "rgba(255,255,255,0.03)",
   border: "1px solid rgba(143,179,255,0.16)",
   borderRadius: 14,
-  padding: "18px 18px 20px",
+  // Phase 5 polish: slightly more generous, consistent padding on all
+  // sides (was 18/18/20 with no explicit left) for a calmer, more even
+  // card interior at every width.
+  padding: "20px 20px 22px",
 };
 
 // +5px over the previous 13px — stronger hierarchy without the icon and
@@ -118,7 +121,7 @@ export function MissionLoadoutPage() {
         <div style={{ fontSize: 12, letterSpacing: "0.2em", color: "#8fb3ff", marginTop: 6 }}>PREPARE FOR DEPLOYMENT</div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(272px, 1fr))", gap: 16, alignItems: "start" }}>
         {LOADOUT_CARDS.map((card, i) => (
           <LoadoutCard key={card.id} card={card} index={i} reduced={reduced} />
         ))}
