@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { getVotableItemById, getAllVotableRideItems } from "../data/parks.js";
-import { getParkHours } from "../data/parkHours.js";
+import { getParkHours, formatEveningWindow } from "../data/parkHours.js";
 import { MONDAY_MISSION } from "../data/mondayMission.js";
 import { FLIGHT_ITINERARIES } from "../data/flights.js";
 
@@ -34,6 +34,21 @@ describe("getParkHours", () => {
 
   it("returns null for an unknown park id", () => {
     expect(getParkHours("not-a-real-park")).toBeNull();
+  });
+});
+
+describe("formatEveningWindow", () => {
+  it("drops the repeated meridiem when start and close share one", () => {
+    expect(formatEveningWindow("5:00 PM", "9:00 PM")).toBe("5:00–9:00 PM");
+  });
+
+  it("keeps both meridiems when start and close differ", () => {
+    expect(formatEveningWindow("11:00 AM", "1:00 PM")).toBe("11:00 AM–1:00 PM");
+  });
+
+  it("falls back to just the start time when close is unknown", () => {
+    expect(formatEveningWindow("5:00 PM", null)).toBe("5:00 PM");
+    expect(formatEveningWindow("5:00 PM", undefined)).toBe("5:00 PM");
   });
 });
 
@@ -95,24 +110,36 @@ describe("MONDAY_MISSION data integrity", () => {
       });
   });
 
-  it("carries the new time anchors (depart-for-airport, evening-ops) with the exact requested values", () => {
-    const departForAirport = MONDAY_MISSION.rail.find((n) => n.id === "depart-for-airport");
-    expect(departForAirport).toBeTruthy();
-    expect(departForAirport.time).toBe("2:45 AM");
-    expect(departForAirport.kind).toBe("flexible");
-
-    const eveningOps = MONDAY_MISSION.rail.find((n) => n.id === "evening-ops");
-    expect(eveningOps).toBeTruthy();
-    expect(eveningOps.time).toBe("5:00 PM");
+  it("carries exactly the six requested primary time anchors, in order", () => {
+    const expected = [
+      ["depart-for-airport", "2:45 AM"],
+      ["deployment", "5:00 AM"],
+      ["rendezvous", "8:45 AM"],
+      ["batuu-ops", "12:30 PM"],
+      ["ogas", "4:20 PM"],
+      ["evening-ops", "5:00 PM"], // literal start; displayed time becomes a range at render time
+    ];
+    expect(MONDAY_MISSION.rail.map((n) => n.id)).toEqual(expected.map(([id]) => id));
+    expected.forEach(([id, time]) => {
+      const node = MONDAY_MISSION.rail.find((n) => n.id === id);
+      expect(node.time, `expected node "${id}" to carry time "${time}"`).toBe(time);
+    });
   });
 
-  it("has exactly one endpoint node (park close) that sources its time from parkHours, not a literal string", () => {
-    const endpointNodes = MONDAY_MISSION.rail.filter((n) => n.kind === "endpoint");
-    expect(endpointNodes).toHaveLength(1);
-    const [parkClose] = endpointNodes;
-    expect(parkClose.timeFromParkHours).toBe(true);
-    expect(parkClose.time).toBeUndefined();
-    expect(parkClose).toBe(MONDAY_MISSION.rail[MONDAY_MISSION.rail.length - 1]); // the day's final node
+  it("has no standalone endpoint/park-close node — Evening Operations covers close via its own range", () => {
+    expect(MONDAY_MISSION.rail.some((n) => n.kind === "endpoint")).toBe(false);
+    const eveningOps = MONDAY_MISSION.rail.find((n) => n.id === "evening-ops");
+    expect(eveningOps.rangeEndFromParkHours).toBe(true);
+    expect(eveningOps).toBe(MONDAY_MISSION.rail[MONDAY_MISSION.rail.length - 1]); // still the day's final node
+  });
+
+  it("no longer has a standalone basecamp node — its content folds into Rendezvous", () => {
+    expect(MONDAY_MISSION.rail.some((n) => n.id === "basecamp")).toBe(false);
+    const rendezvous = MONDAY_MISSION.rail.find((n) => n.id === "rendezvous");
+    const hasBasecampHighlight = rendezvous.blocks.some(
+      (b) => b.type === "highlight" && b.label === "BASECAMP" && b.value === "Universal Endless Summer — Dockside"
+    );
+    expect(hasBasecampHighlight).toBe(true);
   });
 
   it("does not add any intermediate attraction/ride times beyond the known anchors", () => {

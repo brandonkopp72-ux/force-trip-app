@@ -40,7 +40,10 @@ import { useReducedMotion } from "../hooks/useReducedMotion.js";
  * the time column and the rail gutter are fixed, small widths so content
  * always keeps most of the screen.
  */
-const TIME_COLUMN_WIDTH = "clamp(54px, 16vw, 80px)";
+// Wide enough to fit the longest primary anchor without wrapping or
+// clipping — a range like "5:00–9:00 PM" needs noticeably more room than a
+// single time, so this is wider than a single-time-only column would be.
+const TIME_COLUMN_WIDTH = "clamp(64px, 22vw, 96px)";
 const RAIL_GUTTER = 30;
 const DEFAULT_TINT = "#8fb3ff";
 

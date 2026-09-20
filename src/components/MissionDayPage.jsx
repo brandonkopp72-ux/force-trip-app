@@ -1,4 +1,4 @@
-import { getParkHours } from "../data/parkHours.js";
+import { getParkHours, formatEveningWindow } from "../data/parkHours.js";
 import { RailBlock, HardNodeContent } from "./RailBlocks.jsx";
 import { MissionRail } from "./MissionRail.jsx";
 
@@ -14,9 +14,10 @@ import { MissionRail } from "./MissionRail.jsx";
  *      HardNodeContent (a hard node's fixed fields) — MissionRail itself
  *      never sees mission-specific data, only the resulting JSX. A node
  *      flagged `timeFromParkHours` gets its displayed time substituted here
- *      from parkHours.js at render time, rather than a literal string in
- *      the day config — so the real close time only ever needs updating in
- *      one place.
+ *      from parkHours.js at render time; one flagged `rangeEndFromParkHours`
+ *      instead keeps its own literal start time and appends that same close
+ *      time as a range (e.g. "5:00–9:00 PM") — either way, the real close
+ *      time only ever needs updating in parkHours.js.
  *
  * Tuesday-Friday reuse this component unchanged in Phase 4 — they just
  * pass their own day config.
@@ -25,19 +26,25 @@ export function MissionDayPage({ mission, votesByItem, onBack }) {
   const hours = getParkHours(mission.parkId);
   const { operatingIntel } = mission;
 
-  const railNodes = mission.rail.map((node) => ({
-    id: node.id,
-    kind: node.kind,
-    heading: node.heading,
-    tint: node.tint,
-    time: node.timeFromParkHours ? hours?.close : node.time,
-    content:
-      node.kind === "hard" ? (
-        <HardNodeContent node={node} />
-      ) : (
-        node.blocks.map((block, i) => <RailBlock key={i} block={block} votesByItem={votesByItem} />)
-      ),
-  }));
+  const railNodes = mission.rail.map((node) => {
+    let time = node.time;
+    if (node.timeFromParkHours) time = hours?.close;
+    else if (node.rangeEndFromParkHours && hours?.close) time = formatEveningWindow(node.time, hours.close);
+
+    return {
+      id: node.id,
+      kind: node.kind,
+      heading: node.heading,
+      tint: node.tint,
+      time,
+      content:
+        node.kind === "hard" ? (
+          <HardNodeContent node={node} />
+        ) : (
+          node.blocks.map((block, i) => <RailBlock key={i} block={block} votesByItem={votesByItem} />)
+        ),
+    };
+  });
 
   return (
     <div style={{ padding: "18px 0 12px" }}>

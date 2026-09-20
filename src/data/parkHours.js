@@ -16,3 +16,21 @@ export const PARK_HOURS = {
 export function getParkHours(parkId) {
   return PARK_HOURS[parkId] || null;
 }
+
+/**
+ * Formats a flexible window that runs from a fixed start time to the park's
+ * close, e.g. ("5:00 PM", "9:00 PM") -> "5:00–9:00 PM" — the way people
+ * actually write a same-period range, dropping the repeated meridiem rather
+ * than showing it twice. Falls back to just the start time if close is
+ * unknown. Used by Evening Operations-style rail nodes so the display stays
+ * correct if the configured close time above ever changes.
+ */
+export function formatEveningWindow(startTime, closeTime) {
+  if (!closeTime) return startTime;
+  const meridiemOf = (t) => t.trim().slice(-2).toUpperCase();
+  const withoutMeridiem = (t) => t.trim().slice(0, -2).trim();
+  if (meridiemOf(startTime) === meridiemOf(closeTime)) {
+    return `${withoutMeridiem(startTime)}–${closeTime}`;
+  }
+  return `${startTime}–${closeTime}`;
+}

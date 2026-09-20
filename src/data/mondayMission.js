@@ -12,23 +12,31 @@
  *   { kind: "flexible", id, heading, tint, blocks: [...], time? }  — small marker, no pulse
  *   { kind: "hard", id, heading, time, tag, targetArrival, note, vibeTags, tint } — large pulsing marker
  *   { kind: "endpoint", id, heading, tint, blocks: [...], timeFromParkHours: true } — ring marker, day's close
+ *     (a standalone close-of-day node; not currently used by Monday, which
+ *     folds its close time into Evening Operations' range instead — kept
+ *     available for a day that wants a distinct final marker in Phase 4)
  *
  * `time` (optional on "flexible"; required on "hard") is a known, meaningful
  * time MissionRail shows in its left-side time column, aligned with that
  * node's marker. Every time in that column renders at the SAME size/weight/
  * line-height regardless of node kind — only its color differs, by
  * convention: a plain clock time reads bright/neutral, an approximate one
- * (write the "~" into the string itself, e.g. "~11:30 AM") reads softer, and
- * a "hard" node's locked time reads in the accent amber. The type of event
- * is communicated by the MARKER (small dot vs. large pulsing vs. ring), not
- * by resizing the time text. Leave `time` unset on a flexible node with no
- * real time anchor (Rendezvous, Batuu Operations) rather than inventing one
- * just to fill the column.
+ * (write the "~" into the string itself) reads softer, and a "hard" node's
+ * locked time reads in the accent amber. The type of event is communicated
+ * by the MARKER (small dot vs. large pulsing vs. ring), not by resizing the
+ * time text. Monday intentionally keeps every primary anchor a firm value
+ * (no "~") now that the day is broken into six broad phases rather than a
+ * dense sequence of small steps — leave `time` unset on any node that isn't
+ * one of those six primary phases, rather than inventing one to fill a row.
  *
  * `timeFromParkHours: true` on an "endpoint" node tells MissionDayPage to
- * substitute that day's actual close time from parkHours.js at render time,
- * instead of a literal `time` string here — so publishing the real Oct 2026
- * hours later only means editing parkHours.js, never this file or any JSX.
+ * substitute that day's actual close time from parkHours.js at render time.
+ * `rangeEndFromParkHours: true` on a "flexible" node instead combines its own
+ * literal `time` (a fixed start) with that same close time into one range
+ * string via formatEveningWindow() — this is how Evening Operations shows
+ * "5:00–9:00 PM" without hard-coding the close hour here. Either way,
+ * publishing the real Oct 2026 hours later only means editing parkHours.js,
+ * never this file or any JSX.
  *
  * `blocks` is a small, fixed set of content-block types (see RailBlocks.jsx
  * for the renderer) rather than raw JSX, specifically so Tuesday-Friday can
@@ -61,7 +69,9 @@ export const MONDAY_MISSION = {
   operatingIntel: {
     parkLabel: "HOLLYWOOD STUDIOS",
     lockedEvent: { label: "OGA'S CANTINA", time: "4:20 PM" },
-    targetArrival: "~11:30 AM",
+    // Matches the Batuu Operations rail anchor below — kept in sync with it
+    // rather than the old, now-superseded ~11:30 AM basecamp estimate.
+    targetArrival: "12:30 PM",
   },
 
   rail: [
@@ -84,6 +94,7 @@ export const MONDAY_MISSION = {
       id: "deployment",
       heading: "DEPLOYMENT",
       tint: "#7fa7d9",
+      time: "5:00 AM",
       blocks: [{ type: "flightPair", flightIds: ["main-squad", "justin"] }],
     },
     {
@@ -91,6 +102,13 @@ export const MONDAY_MISSION = {
       id: "rendezvous",
       heading: "ORLANDO RENDEZVOUS",
       tint: "#7fa7d9",
+      time: "8:45 AM",
+      // Establishing basecamp (Universal Endless Summer — Dockside) folds in
+      // here rather than getting its own primary rail anchor: it's the same
+      // MCO → Dockside arc as the flow below, just continued through to
+      // "bags dropped, ready for Hollywood Studios." The old standalone
+      // "~11:30 AM target insertion" estimate is dropped since Batuu
+      // Operations' own 12:30 PM anchor now covers that.
       blocks: [
         { type: "highlight", label: "PRIMARY OBJECTIVE", value: "MCO Baggage Claim" },
         {
@@ -98,25 +116,11 @@ export const MONDAY_MISSION = {
           text: "If the main group arrives early enough and Justin's arrival gate is practical, the early group may meet him there. Otherwise baggage claim is the default rendezvous.",
         },
         { type: "flowSteps", steps: ["Collect luggage", "Ground transportation", "Dockside"] },
-      ],
-    },
-    {
-      kind: "flexible",
-      id: "basecamp",
-      heading: "ESTABLISH BASECAMP",
-      tint: "#9a9a7f",
-      // Same value as the "TARGET INSERTION" highlight below, surfaced at
-      // the node level too so MissionRail can show it in the left time
-      // column — this is a display-layer duplication of one existing
-      // value, not a new time.
-      time: "~11:30 AM",
-      blocks: [
-        { type: "highlight", label: "LOCATION", value: "Universal Endless Summer — Dockside" },
+        { type: "highlight", label: "BASECAMP", value: "Universal Endless Summer — Dockside" },
         {
           type: "opportunityList",
           items: ["Drop luggage", "Regroup", "Freshen up if needed", "Transportation to Hollywood Studios"],
         },
-        { type: "highlight", label: "TARGET INSERTION", value: "~11:30 AM" },
       ],
     },
     {
@@ -124,6 +128,7 @@ export const MONDAY_MISSION = {
       id: "batuu-ops",
       heading: "BATUU OPERATIONS",
       tint: "#c98a4b",
+      time: "12:30 PM",
       blocks: [
         { type: "text", label: "WINDOW", text: "Arrival → Oga's" },
         {
@@ -190,6 +195,10 @@ export const MONDAY_MISSION = {
       heading: "EVENING OPERATIONS",
       tint: "#5a6a9a",
       time: "5:00 PM",
+      // Displayed as "5:00–<park close> PM" (see rangeEndFromParkHours in
+      // MissionDayPage.jsx) — this single anchor covers Oga's through
+      // closing rather than a separate end-of-day node.
+      rangeEndFromParkHours: true,
       blocks: [
         { type: "text", label: "WINDOW", text: "After Oga's → Park Close" },
         {
@@ -210,19 +219,6 @@ export const MONDAY_MISSION = {
             "Fantasmic! (if desired)",
             "Simply wander and enjoy the park",
           ],
-        },
-      ],
-    },
-    {
-      kind: "endpoint",
-      id: "park-close",
-      heading: "END OF PARK MISSION",
-      tint: "#3f4d73",
-      timeFromParkHours: true,
-      blocks: [
-        {
-          type: "text",
-          text: "Hollywood Studios operations conclude for the day — head back to basecamp whenever the squad is ready to call it.",
         },
       ],
     },
