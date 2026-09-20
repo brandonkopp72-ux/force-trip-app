@@ -1,5 +1,6 @@
 import { FLIGHT_ITINERARIES } from "../data/flights.js";
 import { getVotableItemById } from "../data/parks.js";
+import { rankItemsByPositiveVotes, getDiningConsensusRanking, buildFridayReadiness } from "../lib/tripStats.js";
 import { VoteBadge } from "./VoteBadge.jsx";
 
 const mutedText = { fontSize: 13.5, color: "#c9d3e8", lineHeight: 1.5 };
@@ -47,8 +48,14 @@ function FlowStepsBlock({ block }) {
   );
 }
 
-function FlightCard({ flight }) {
+// `leg` picks which half of the itinerary to render — "outbound" (the
+// default, Monday's Deployment) or "return" (Friday's Extraction). Both legs
+// already exist in full on every FLIGHT_ITINERARIES entry (see flights.js),
+// so this never invents a time — it just points at the other real leg.
+function FlightCard({ flight, leg = "outbound" }) {
   if (!flight) return null;
+  const legData = leg === "return" ? flight.returnFlight : flight.outbound;
+  if (!legData) return null;
   return (
     <div
       style={{
@@ -62,22 +69,22 @@ function FlightCard({ flight }) {
       <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: 12, letterSpacing: "0.08em", color: "#8fb3ff", marginBottom: 8 }}>
         {flight.label}
       </div>
-      <div style={{ fontSize: 12.5, color: "#a9b4cc", marginBottom: 8 }}>{flight.outbound.flight}</div>
+      <div style={{ fontSize: 12.5, color: "#a9b4cc", marginBottom: 8 }}>{legData.flight}</div>
       {/* Time-led: each leg's clock time is the first thing read, with the
           airport/direction as supporting detail beside it — same left-time
           treatment MissionRail uses for the rail itself. */}
       <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", columnGap: 10, rowGap: 5, alignItems: "baseline" }}>
         <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: 15, color: "#ffd9ad", whiteSpace: "nowrap" }}>
-          {flight.outbound.from.time}
+          {legData.from.time}
         </span>
         <span style={{ fontSize: 12.5, color: "#dbe9ff" }}>
-          <span style={{ fontWeight: 700, color: "#fff" }}>{flight.outbound.from.code}</span> · Depart
+          <span style={{ fontWeight: 700, color: "#fff" }}>{legData.from.code}</span> · Depart
         </span>
         <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: 15, color: "#ffd9ad", whiteSpace: "nowrap" }}>
-          {flight.outbound.to.time}
+          {legData.to.time}
         </span>
         <span style={{ fontSize: 12.5, color: "#dbe9ff" }}>
-          <span style={{ fontWeight: 700, color: "#fff" }}>{flight.outbound.to.code}</span> · Arrive
+          <span style={{ fontWeight: 700, color: "#fff" }}>{legData.to.code}</span> · Arrive
         </span>
       </div>
       <div style={{ fontSize: 11.5, color: "#7c88a6", marginTop: 8 }}>{flight.travelers.length > 1 ? `${flight.travelers.length} travelers` : flight.travelers[0]}</div>
@@ -90,7 +97,7 @@ function FlightPairBlock({ block }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
       {flights.map((f) => (
-        <FlightCard key={f.id} flight={f} />
+        <FlightCard key={f.id} flight={f} leg={block.leg} />
       ))}
     </div>
   );
@@ -151,6 +158,175 @@ function AttractionRefsBlock({ block, votesByItem }) {
             <VoteBadge itemId={id} votesByItem={votesByItem} />
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Same rendering as AttractionRefsBlock (primary grid or compact list), but
+ * the itemIds are re-sorted by live positive-vote count, highest first,
+ * before handing off. This is how a "current major interest" grouping
+ * (Tuesday's Adventure Operations, Thursday's Universal Studios Operations,
+ * Thursday's HHN priorities) stays truthful as votes change, rather than
+ * baking in today's standings as a fixed order.
+ */
+function RankedAttractionRefsBlock({ block, votesByItem }) {
+  const rankedIds = rankItemsByPositiveVotes(block.itemIds, votesByItem);
+  return <AttractionRefsBlock block={{ ...block, itemIds: rankedIds }} votesByItem={votesByItem} />;
+}
+
+/**
+ * The dynamic dining-consensus surface Tuesday/Wednesday use for their
+ * evening dinner sections — reuses getDiningConsensusRanking (the exact
+ * scoring/tie-break already established for the Rations Excel export)
+ * rather than showing a fixed restaurant. Deliberately simple: name, short
+ * descriptor, and a small consensus-rank badge — no visible formula, no
+ * vote counts broken out, since the daily pages are meant to be skimmed,
+ * not audited. `limit` caps how many rows show (default 3).
+ */
+function DiningConsensusBlock({ block, votesByItem, topPicks }) {
+  const ranked = getDiningConsensusRanking(votesByItem, topPicks).slice(0, block.limit || 3);
+  return (
+    <div>
+      {block.heading && <div style={{ ...labelText, marginBottom: 8 }}>{block.heading}</div>}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {ranked.map((row) => (
+          <div
+            key={row.item.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              background: "rgba(255,255,255,0.025)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 10,
+              padding: "9px 12px",
+            }}
+          >
+            <span style={{ fontSize: 13.5, color: "#dbe9ff" }}>
+              {row.item.name}
+              <span style={{ color: "#7c88a6", fontWeight: 400 }}> — {row.item.note}</span>
+            </span>
+            <span
+              style={{
+                fontFamily: "'Oswald', sans-serif",
+                fontWeight: 700,
+                fontSize: 11.5,
+                color: "#0a0e1a",
+                background: "#8fb3ff",
+                borderRadius: 999,
+                padding: "3px 9px",
+                flexShrink: 0,
+              }}
+            >
+              #{row.rank}
+            </span>
+          </div>
+        ))}
+      </div>
+      {block.note && <div style={{ fontSize: 12, fontStyle: "italic", color: "#7c88a6", marginTop: 10 }}>{block.note}</div>}
+    </div>
+  );
+}
+
+/**
+ * External-links-only section for HHN's Spoiler Intel — clearly separated
+ * from the event-preview content around it. No embeds, ever: just a heading,
+ * an optional warning line, and a list of outbound links. Where a spoiler
+ * source isn't something this app can know in advance (a specific creator's
+ * walkthrough video), `href` is a plain, generically-constructed search
+ * link for that house's name rather than a fabricated specific URL — real,
+ * always-resolves, and easy for Brandon to swap for a curated link later.
+ */
+function LinkListBlock({ block }) {
+  return (
+    <div>
+      {block.heading && <div style={{ ...labelText, marginBottom: 6, color: "#ff8a7a" }}>{block.heading}</div>}
+      {block.warning && <div style={{ fontSize: 12.5, fontStyle: "italic", color: "#d8b98f", marginBottom: 10, lineHeight: 1.5 }}>{block.warning}</div>}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {block.links.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontSize: 13,
+              color: "#8fb3ff",
+              textDecoration: "none",
+              background: "rgba(255,255,255,0.025)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 10,
+              padding: "9px 12px",
+            }}
+          >
+            {link.label} ↗
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Read-only view of Friday's existing Final Morning decision (the
+ * singleChoiceGroup already in parks.js's departure-day entry, decided
+ * through V1's normal single-choice voting) — no new voting surface, just
+ * live per-option counts via the same buildFridayReadiness helper V1's
+ * readiness tracking already uses.
+ */
+function FridayDecisionBlock({ block, votesByItem }) {
+  const readiness = buildFridayReadiness(votesByItem);
+  const counts = {};
+  Object.values(readiness.choiceByPerson).forEach((id) => {
+    if (id) counts[id] = (counts[id] || 0) + 1;
+  });
+  const options = Object.entries(readiness.optionLabelById);
+
+  return (
+    <div>
+      {block.heading && <div style={{ ...labelText, marginBottom: 8 }}>{block.heading}</div>}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {options.map(([id, name]) => (
+          <div
+            key={id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              background: "rgba(255,255,255,0.025)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 10,
+              padding: "9px 12px",
+            }}
+          >
+            <span style={{ fontSize: 13.5, color: "#dbe9ff" }}>{name}</span>
+            {/* Friday's single-choice options store "chosen", not the
+                must_do/interested levels VoteBadge's live count expects, so
+                this counts directly from readiness.choiceByPerson above
+                rather than reusing VoteBadge here. */}
+            <span
+              style={{
+                fontFamily: "'Oswald', sans-serif",
+                fontWeight: 700,
+                fontSize: 12.5,
+                color: "#dbe9ff",
+                background: "rgba(143,179,255,0.14)",
+                border: "1px solid rgba(143,179,255,0.3)",
+                borderRadius: 999,
+                padding: "3px 9px",
+              }}
+            >
+              {counts[id] || 0}/6
+            </span>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize: 12, fontStyle: "italic", color: "#7c88a6", marginTop: 10 }}>
+        {readiness.decidedCount}/6 have weighed in{readiness.squadDecided ? " — everyone's decided." : "."}
       </div>
     </div>
   );
@@ -298,13 +474,16 @@ export function HardNodeContent({ node }) {
 }
 
 /**
- * Resolves one Mission Rail content block to JSX. The block-type set is
- * intentionally small and fixed (see mondayMission.js) so Tuesday-Friday's
- * own day configs can reuse this exact renderer in Phase 4 with no new
- * component work — a new day just emits the same block shapes with
- * different content.
+ * Resolves one Mission Rail content block to JSX. The original eight block
+ * types (see mondayMission.js) came from Monday alone; Phase 4 added three
+ * more — "rankedAttractionRefs" (live vote-sorted attraction list),
+ * "diningConsensus" (live dining ranking, needs `topPicks`), "linkList"
+ * (external links only, for HHN's Spoiler Intel), and "fridayDecision"
+ * (read-only view of Friday's existing single-choice vote) — each addressing
+ * one specific Tuesday-Friday need rather than generalizing the schema
+ * further than the real content requires.
  */
-export function RailBlock({ block, votesByItem }) {
+export function RailBlock({ block, votesByItem, topPicks }) {
   switch (block.type) {
     case "text":
       return <TextBlock block={block} />;
@@ -316,12 +495,20 @@ export function RailBlock({ block, votesByItem }) {
       return <FlightPairBlock block={block} />;
     case "attractionRefs":
       return <AttractionRefsBlock block={block} votesByItem={votesByItem} />;
+    case "rankedAttractionRefs":
+      return <RankedAttractionRefsBlock block={block} votesByItem={votesByItem} />;
     case "opportunityList":
       return <OpportunityListBlock block={block} />;
     case "featureCard":
       return <FeatureCardBlock block={block} />;
     case "foodList":
       return <FoodListBlock block={block} />;
+    case "diningConsensus":
+      return <DiningConsensusBlock block={block} votesByItem={votesByItem} topPicks={topPicks} />;
+    case "linkList":
+      return <LinkListBlock block={block} />;
+    case "fridayDecision":
+      return <FridayDecisionBlock block={block} votesByItem={votesByItem} />;
     default:
       return null;
   }

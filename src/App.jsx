@@ -286,7 +286,7 @@ export default function App() {
           realtimeConnected={votes.realtimeConnected}
         />
         <V2CountdownBar />
-        <V2Shell onReturnToFinalApproach={handleReturnToFinalApproach} votesByItem={votes.votesByItem} />
+        <V2Shell onReturnToFinalApproach={handleReturnToFinalApproach} votesByItem={votes.votesByItem} topPicks={votes.topPicks} />
       </div>
     );
   }

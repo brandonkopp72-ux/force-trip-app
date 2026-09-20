@@ -218,6 +218,23 @@ export function getPositiveVoteCount(itemId, votesByItem) {
 }
 
 /**
+ * Sorts a list of votable item ids by live positive-vote count, highest
+ * first — the mechanism Phase 4's daily pages use so a "current major
+ * interest" grouping (e.g. Tuesday's Adventure Operations, Thursday's
+ * Universal Studios Operations, Thursday's HHN priorities) never hard-codes
+ * which attraction leads. Ties keep their original relative order (a stable
+ * sort) rather than being resolved arbitrarily, since nothing in the spec
+ * calls for a tie-break beyond vote count here. Pure and votesByItem-driven,
+ * same as getPositiveVoteCount, so it's testable without rendering React.
+ */
+export function rankItemsByPositiveVotes(itemIds, votesByItem) {
+  return itemIds
+    .map((id, index) => ({ id, index, count: getPositiveVoteCount(id, votesByItem) }))
+    .sort((a, b) => b.count - a.count || a.index - b.index)
+    .map((row) => row.id);
+}
+
+/**
  * Dynamic dining consensus ranking for V2 (Amendment 1). Reuses the exact
  * scoring/tie-break formula established for the Rations Excel export
  * (see computeDiningRanking in lib/exportExcel.js): Must Do = +2,

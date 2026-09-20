@@ -32,7 +32,7 @@ import { FiveDaysPage } from "./FiveDaysPage.jsx";
  * Days links out to a placeholder, not real day content. See
  * FiveDaysPage.jsx.
  */
-export function V2Shell({ onReturnToFinalApproach, votesByItem }) {
+export function V2Shell({ onReturnToFinalApproach, votesByItem, topPicks }) {
   const [screen, setScreen] = useState("loadout");
 
   return (
@@ -70,7 +70,7 @@ export function V2Shell({ onReturnToFinalApproach, votesByItem }) {
       <div style={{ flex: 1, width: "100%", maxWidth: 960, margin: "0 auto", padding: "0 16px 48px", boxSizing: "border-box" }}>
         {screen === "loadout" && <MissionLoadoutPage />}
         {screen === "intel" && <MissionIntelPage />}
-        {screen === "fiveDays" && <FiveDaysPage votesByItem={votesByItem} />}
+        {screen === "fiveDays" && <FiveDaysPage votesByItem={votesByItem} topPicks={topPicks} />}
       </div>
     </div>
   );

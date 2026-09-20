@@ -2,13 +2,22 @@ import { useState } from "react";
 import { MISSION_DAYS } from "../data/missionDays.js";
 import { useReducedMotion } from "../hooks/useReducedMotion.js";
 import { MONDAY_MISSION } from "../data/mondayMission.js";
+import { TUESDAY_MISSION } from "../data/tuesdayMission.js";
+import { WEDNESDAY_MISSION } from "../data/wednesdayMission.js";
+import { THURSDAY_MISSION } from "../data/thursdayMission.js";
+import { FRIDAY_MISSION } from "../data/fridayMission.js";
 import { MissionDayPage } from "./MissionDayPage.jsx";
 
-// Days with a real Mission Rail page built so far. Every other day still
-// falls through to DayDetailPlaceholder below — this is the seam Phase 4
-// extends by adding Tuesday-Friday's own mission configs here.
+// All five days now have a real Mission Rail page — Phase 4 filled in the
+// four added here. DayDetailPlaceholder below is unreachable in practice now
+// (every MISSION_DAYS id has a matching entry) but stays as a safety net for
+// any future day added to missionDays.js before its mission config exists.
 const MISSION_PAGES = {
   monday: MONDAY_MISSION,
+  tuesday: TUESDAY_MISSION,
+  wednesday: WEDNESDAY_MISSION,
+  thursday: THURSDAY_MISSION,
+  friday: FRIDAY_MISSION,
 };
 
 // Text always sits at the bottom of a card (justifyContent: flex-end), but
@@ -132,14 +141,16 @@ function DayDetailPlaceholder({ day, onBack }) {
  * DayDetailPlaceholder for a real MissionDayPage keyed by the same id,
  * rather than being thrown away.
  */
-export function FiveDaysPage({ votesByItem }) {
+export function FiveDaysPage({ votesByItem, topPicks }) {
   const reduced = useReducedMotion();
   const [activeDayId, setActiveDayId] = useState(null);
 
   if (activeDayId) {
     const mission = MISSION_PAGES[activeDayId];
     if (mission) {
-      return <MissionDayPage mission={mission} votesByItem={votesByItem} onBack={() => setActiveDayId(null)} />;
+      return (
+        <MissionDayPage mission={mission} votesByItem={votesByItem} topPicks={topPicks} onBack={() => setActiveDayId(null)} />
+      );
     }
     const day = MISSION_DAYS.find((d) => d.id === activeDayId);
     return <DayDetailPlaceholder day={day} onBack={() => setActiveDayId(null)} />;
