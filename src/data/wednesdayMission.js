@@ -83,6 +83,10 @@ export const WEDNESDAY_MISSION = {
       id: "portal-operations",
       heading: "PORTAL OPERATIONS",
       tint: "#8a6fd1",
+      // Phase 5 correction pass: a broad, approximate afternoon anchor (the
+      // "~" marks it as non-appointment) so the left rail carries a little
+      // more temporal context without turning the day into a schedule.
+      time: "~2:00 PM",
       blocks: [
         {
           type: "text",

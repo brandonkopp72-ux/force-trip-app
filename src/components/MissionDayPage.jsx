@@ -196,6 +196,9 @@ export function MissionDayPage({ mission, votesByItem, topPicks, onBack, onNavig
             bottomGap={0}
           />
         )}
+        {mission.parkToParkIntel?.enabled && (
+          <ParkToParkIntelStrip intel={mission.parkToParkIntel} accent={mission.accent} />
+        )}
       </div>
 
       <MissionRail nodes={railNodes} />
@@ -248,6 +251,92 @@ function IntelChip({ label, value, accent }) {
         {label}
       </span>
       <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: 13.5, fontWeight: 700, color: accent || "#dbe9ff" }}>{value}</span>
+    </div>
+  );
+}
+
+const intelLabelStyle = {
+  fontFamily: "'Oswald', sans-serif",
+  fontSize: 10.5,
+  fontWeight: 700,
+  letterSpacing: "0.12em",
+  color: "#8fb3ff",
+};
+
+/**
+ * Compact Park-to-Park Intel strip — Phase 5 correction pass. Tuesday and
+ * Thursday both have Park-to-Park admission (Islands of Adventure + Universal
+ * Studios Florida in play the same day), and the family specifically wants
+ * to ride Hogwarts Express during the trip. This is intentionally NOT
+ * another large content card: one compact box, same information
+ * architecture on both days (the station diagram and Train Objective line
+ * never change), with only `primaryPark` and `flowNote` varying per day via
+ * `mission.parkToParkIntel` — see tuesdayMission.js/thursdayMission.js.
+ *
+ * This does not add any attraction cards for the "other" park — crossing
+ * over is communicated as flexible trip intel, not attraction-card clutter,
+ * per the spec ("expand options without making the page twice as dense").
+ * No completion tracking, no checkbox for whether the train got ridden.
+ */
+function ParkToParkIntelStrip({ intel, accent }) {
+  return (
+    <div
+      style={{
+        marginTop: 10,
+        background: "rgba(143,179,255,0.05)",
+        border: "1px solid rgba(143,179,255,0.18)",
+        borderRadius: 12,
+        padding: "12px 16px",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+        <span style={intelLabelStyle}>PARK-TO-PARK INTEL</span>
+        <span style={{ fontSize: 10.5, letterSpacing: "0.08em", color: "#7c88a6" }}>
+          TODAY'S BASE: <span style={{ color: accent, fontWeight: 700 }}>{intel.primaryPark?.toUpperCase()}</span>
+        </span>
+      </div>
+
+      <div style={{ fontSize: 12.5, color: "#c9d3e8", lineHeight: 1.5, marginBottom: 12 }}>
+        Both Universal Studios Florida and Islands of Adventure are in play today — Park-to-Park admission required.
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", marginBottom: 12 }}>
+        <StationChip station="HOGSMEADE STATION" parkLabel="Islands of Adventure" />
+        <span aria-hidden="true" style={{ color: "#8fb3ff", fontSize: 16, lineHeight: 1 }}>↕</span>
+        <StationChip station="KING'S CROSS STATION" parkLabel="Universal Studios Florida" />
+      </div>
+
+      {intel.trainObjective && (
+        <div style={{ marginBottom: intel.flowNote ? 10 : 0 }}>
+          <div style={{ ...intelLabelStyle, marginBottom: 3 }}>TRAIN OBJECTIVE</div>
+          <div style={{ fontSize: 12.5, color: "#dbe9ff", lineHeight: 1.5 }}>
+            Work a Hogwarts Express crossing into the day when it fits naturally.
+          </div>
+        </div>
+      )}
+
+      {intel.flowNote && <div style={{ fontSize: 12, fontStyle: "italic", color: "#a9b4cc", lineHeight: 1.5 }}>{intel.flowNote}</div>}
+    </div>
+  );
+}
+
+function StationChip({ station, parkLabel }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.1)",
+        borderRadius: 8,
+        padding: "6px 10px",
+      }}
+    >
+      <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: "#dbe9ff" }}>
+        {station}
+      </span>
+      <span style={{ fontSize: 11, color: "#7c88a6" }}>{parkLabel}</span>
     </div>
   );
 }

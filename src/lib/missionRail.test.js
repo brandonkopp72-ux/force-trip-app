@@ -110,7 +110,7 @@ describe("MONDAY_MISSION data integrity", () => {
       });
   });
 
-  it("carries exactly the six requested primary time anchors, in order", () => {
+  it("carries exactly the seven requested primary time anchors, in order (Phase 5 adds Park Close after Evening Operations)", () => {
     const expected = [
       ["depart-for-airport", "2:45 AM"],
       ["deployment", "5:00 AM"],
@@ -118,19 +118,28 @@ describe("MONDAY_MISSION data integrity", () => {
       ["batuu-ops", "12:30 PM"],
       ["ogas", "4:20 PM"],
       ["evening-ops", "5:00 PM"], // literal start; displayed time becomes a range at render time
+      ["park-close", undefined], // time comes from parkHours.js at render time, not a literal here
     ];
     expect(MONDAY_MISSION.rail.map((n) => n.id)).toEqual(expected.map(([id]) => id));
     expected.forEach(([id, time]) => {
+      if (time === undefined) return;
       const node = MONDAY_MISSION.rail.find((n) => n.id === id);
       expect(node.time, `expected node "${id}" to carry time "${time}"`).toBe(time);
     });
   });
 
-  it("has no standalone endpoint/park-close node — Evening Operations covers close via its own range", () => {
-    expect(MONDAY_MISSION.rail.some((n) => n.kind === "endpoint")).toBe(false);
+  it("Phase 5 adds a standalone Park Close endpoint after Evening Operations, which still keeps its own range display", () => {
     const eveningOps = MONDAY_MISSION.rail.find((n) => n.id === "evening-ops");
     expect(eveningOps.rangeEndFromParkHours).toBe(true);
-    expect(eveningOps).toBe(MONDAY_MISSION.rail[MONDAY_MISSION.rail.length - 1]); // still the day's final node
+    const endpointNodes = MONDAY_MISSION.rail.filter((n) => n.kind === "endpoint");
+    expect(endpointNodes).toHaveLength(1);
+    expect(endpointNodes[0].id).toBe("park-close");
+    expect(endpointNodes[0].timeFromParkHours).toBe(true);
+    // Park Close is the day's final node by default (Fantasmic stays
+    // unconfirmed/filtered out) — still true once a showtime IS confirmed,
+    // since Fantasmic would render between Evening Operations and Park
+    // Close chronologically, never after it.
+    expect(MONDAY_MISSION.rail[MONDAY_MISSION.rail.length - 1].id).toBe("park-close");
   });
 
   it("no longer has a standalone basecamp node — its content folds into Rendezvous", () => {

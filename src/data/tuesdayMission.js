@@ -34,6 +34,22 @@ export const TUESDAY_MISSION = {
     parkLabel: "ISLANDS OF ADVENTURE",
   },
 
+  // Phase 5 correction pass: the family has Park-to-Park admission, so both
+  // Islands of Adventure and Universal Studios Florida are technically in
+  // play today — but Tuesday stays primarily an Islands page (see the rail
+  // below: only ioa-* attractions). This is compact trip intel, not a
+  // second park's worth of attraction cards. `flowNote` is the one thing
+  // that differs from Thursday's own parkToParkIntel — everything else
+  // renders through the exact same ParkToParkIntelStrip in
+  // MissionDayPage.jsx ("same information architecture" both days).
+  parkToParkIntel: {
+    enabled: true,
+    primaryPark: "Islands of Adventure",
+    trainObjective: true,
+    flowNote:
+      "Start in Islands / Hogsmeade. If it fits the day, cross to Universal Studios via Hogwarts Express — USF can become an optional side excursion, with a return to Islands or on into CityWalk depending on energy and hours.",
+  },
+
   rail: [
     {
       kind: "flexible",
@@ -98,6 +114,10 @@ export const TUESDAY_MISSION = {
       // major objectives and the Jurassic-area secondary content this node
       // holds — Phase 5 day-theming polish (tint only).
       tint: "#3f9e7a",
+      // Phase 5 correction pass: a broad, approximate afternoon anchor (the
+      // "~" marks it as non-appointment) so the left rail carries a little
+      // more temporal context without turning the day into a schedule.
+      time: "~2:00 PM",
       blocks: [
         {
           type: "text",

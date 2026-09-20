@@ -96,6 +96,20 @@ export const THURSDAY_MISSION = {
     earlyAccessLabel: "SCREAM EARLY ACCESS",
   },
 
+  // Phase 5 correction pass — see tuesdayMission.js's own parkToParkIntel
+  // comment for the full rationale. Thursday stays primarily a Universal
+  // Studios + Birthday + HHN page (only usf-*/hhn-* attractions below);
+  // this is compact trip intel, not a second park's attraction list.
+  // Universal Studios remains "today's base" since the day transitions into
+  // HHN there tonight, which flowNote calls out explicitly.
+  parkToParkIntel: {
+    enabled: true,
+    primaryPark: "Universal Studios Florida",
+    trainObjective: true,
+    flowNote:
+      "Start in Universal Studios. If it fits during the daytime window, cross to Islands of Adventure via Hogwarts Express. Universal Studios remains the day's main operational base for the birthday and HHN portion of the night — no required return time set yet.",
+  },
+
   rail: [
     {
       kind: "flexible",
@@ -138,14 +152,21 @@ export const THURSDAY_MISSION = {
       ],
     },
     {
+      // Phase 5 correction pass: broadened from "Diagon Alley" to a wider
+      // afternoon phase — Diagon Alley is still the anchor content here,
+      // but the heading and intro now also cover remaining USF priorities
+      // and a possible Park-to-Park crossing (see the Park-to-Park Intel
+      // strip near the top of the page for the actual Hogwarts Express
+      // objective — this node doesn't repeat that, just acknowledges it).
       kind: "flexible",
-      id: "diagon-alley",
-      heading: "DIAGON ALLEY",
+      id: "afternoon-operations",
+      heading: "AFTERNOON OPERATIONS",
       tint: "#c9a24d",
+      time: "~2:00 PM",
       blocks: [
         {
           type: "text",
-          text: "No rigid schedule here — explore, shop, and eat as it appeals to you.",
+          text: "No rigid schedule in this broad afternoon window — Diagon Alley, any remaining Universal Studios priorities, and a possible Park-to-Park crossing (see the Park-to-Park Intel above) are all fair game. Explore, shop, and eat as it appeals to you.",
         },
         {
           type: "attractionRefs",

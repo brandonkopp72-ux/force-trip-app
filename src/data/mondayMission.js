@@ -246,5 +246,17 @@ export const MONDAY_MISSION = {
     // MONDAY_NIGHTTIME_ENTERTAINMENT. Filtered out entirely by default, so
     // the six-node rail above is exactly what Phase 3 shipped.
     fantasmicNode,
+    // Phase 5 correction pass: a separate, normal endpoint marker for the
+    // day's actual close, requested in addition to (not instead of) Evening
+    // Operations' own "5:00–<close> PM" range display above. Reads the same
+    // real close time from parkHours.js — never a separate hardcoded value.
+    {
+      kind: "endpoint",
+      id: "park-close",
+      heading: "PARK CLOSE",
+      tint: "#5a6a9a",
+      timeFromParkHours: true,
+      blocks: [{ type: "text", text: "Hollywood Studios mission complete for today." }],
+    },
   ].filter(Boolean),
 };

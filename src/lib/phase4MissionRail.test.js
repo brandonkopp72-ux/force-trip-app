@@ -260,7 +260,7 @@ describe("formatEveningWindow with a non-clock close value (HHN's 'Past Midnight
 });
 
 describe("Monday stays unchanged by default (nighttime-entertainment exception is additive-only)", () => {
-  it("still carries exactly its original six rail nodes when Fantasmic isn't confirmed", () => {
+  it("carries its original six rail nodes plus the Phase 5 Park Close endpoint when Fantasmic isn't confirmed", () => {
     expect(MONDAY_MISSION.rail.map((n) => n.id)).toEqual([
       "depart-for-airport",
       "deployment",
@@ -268,6 +268,103 @@ describe("Monday stays unchanged by default (nighttime-entertainment exception i
       "batuu-ops",
       "ogas",
       "evening-ops",
+      "park-close",
     ]);
+  });
+
+  it("Park Close is a normal (non-pulsing) endpoint reading the real configured close time", () => {
+    const node = MONDAY_MISSION.rail.find((n) => n.id === "park-close");
+    expect(node.kind).toBe("endpoint");
+    expect(node.timeFromParkHours).toBe(true);
+  });
+});
+
+describe("Correction pass: approximate afternoon time anchors", () => {
+  it("Tuesday's Adventure Operations carries an approximate ~2:00 PM anchor", () => {
+    const node = TUESDAY_MISSION.rail.find((n) => n.id === "adventure-ops");
+    expect(node.time).toBe("~2:00 PM");
+    expect(node.heading).toBe("ADVENTURE OPERATIONS");
+  });
+
+  it("Wednesday's Portal Operations carries an approximate ~2:00 PM anchor", () => {
+    const node = WEDNESDAY_MISSION.rail.find((n) => n.id === "portal-operations");
+    expect(node.time).toBe("~2:00 PM");
+    expect(node.heading).toBe("PORTAL OPERATIONS");
+  });
+
+  it("Thursday's Diagon Alley node was broadened into Afternoon Operations with an approximate ~2:00 PM anchor", () => {
+    expect(THURSDAY_MISSION.rail.some((n) => n.id === "diagon-alley")).toBe(false);
+    const node = THURSDAY_MISSION.rail.find((n) => n.id === "afternoon-operations");
+    expect(node).toBeTruthy();
+    expect(node.heading).toBe("AFTERNOON OPERATIONS");
+    expect(node.time).toBe("~2:00 PM");
+    expect(node.kind).toBe("flexible");
+  });
+
+  it("Thursday's Afternoon Operations still sits between Lunch/Refuel and the USF daytime close, and still references Hogwarts Express + Diagon Alley", () => {
+    const ids = THURSDAY_MISSION.rail.map((n) => n.id);
+    const lunchIdx = ids.indexOf("lunch-refuel");
+    const afternoonIdx = ids.indexOf("afternoon-operations");
+    const closeIdx = ids.indexOf("usf-daytime-close");
+    expect(afternoonIdx).toBeGreaterThan(lunchIdx);
+    expect(closeIdx).toBeGreaterThan(afternoonIdx);
+
+    const node = THURSDAY_MISSION.rail[afternoonIdx];
+    const hasHogwartsExpressRef = node.blocks.some(
+      (b) => b.type === "attractionRefs" && b.itemIds.includes("usf-hogwartsexpress")
+    );
+    expect(hasHogwartsExpressRef).toBe(true);
+    const hasDiagonAlleyList = node.blocks.some((b) => b.type === "opportunityList" && b.heading === "EXPLORE DIAGON ALLEY");
+    expect(hasDiagonAlleyList).toBe(true);
+  });
+
+  it("Friday gets no approximate afternoon anchor and no time-anchor changes at all — its rail is untouched", () => {
+    expect(FRIDAY_MISSION.rail.map((n) => n.id)).toEqual([
+      "final-morning",
+      "lunch-refuel",
+      "return-to-dockside",
+      "depart-for-mco",
+      "justin-departs",
+      "main-squad-departs",
+    ]);
+    expect(FRIDAY_MISSION.rail.some((n) => String(n.time || "").startsWith("~"))).toBe(false);
+  });
+});
+
+describe("Correction pass: Park-to-Park Intel config", () => {
+  it("is enabled on Tuesday and Thursday (the two Park-to-Park days), pointing at each day's own primary park", () => {
+    expect(TUESDAY_MISSION.parkToParkIntel).toEqual({
+      enabled: true,
+      primaryPark: "Islands of Adventure",
+      trainObjective: true,
+      flowNote: expect.any(String),
+    });
+    expect(THURSDAY_MISSION.parkToParkIntel).toEqual({
+      enabled: true,
+      primaryPark: "Universal Studios Florida",
+      trainObjective: true,
+      flowNote: expect.any(String),
+    });
+  });
+
+  it("is absent on Monday, Wednesday, and Friday (not Park-to-Park days)", () => {
+    expect(MONDAY_MISSION.parkToParkIntel).toBeUndefined();
+    expect(WEDNESDAY_MISSION.parkToParkIntel).toBeUndefined();
+    expect(FRIDAY_MISSION.parkToParkIntel).toBeUndefined();
+  });
+
+  it("never hardcodes a required return time or a hard Hogwarts Express reservation in its flow note", () => {
+    [TUESDAY_MISSION, THURSDAY_MISSION].forEach((mission) => {
+      const note = mission.parkToParkIntel.flowNote.toLowerCase();
+      expect(note).not.toMatch(/\d{1,2}:\d{2}\s*(am|pm)/);
+    });
+  });
+
+  it("does not duplicate the other park's attractions onto Tuesday's or Thursday's rail (Tuesday stays ioa-*, Thursday stays usf-*/hhn-*)", () => {
+    const ids = collectItemIds(TUESDAY_MISSION, ["attractionRefs", "rankedAttractionRefs"]);
+    expect(ids.every((id) => id.startsWith("ioa-"))).toBe(true);
+
+    const thursdayIds = collectItemIds(THURSDAY_MISSION, ["attractionRefs", "rankedAttractionRefs"]);
+    expect(thursdayIds.every((id) => id.startsWith("usf-") || id.startsWith("hhn-"))).toBe(true);
   });
 });
