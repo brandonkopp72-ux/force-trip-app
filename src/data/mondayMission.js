@@ -8,17 +8,27 @@
  *   - operatingIntel — the compact day-summary strip
  *   - rail — an ordered list of nodes that attach to the Mission Rail.
  *
- * A rail node is either:
+ * A rail node is one of:
  *   { kind: "flexible", id, heading, tint, blocks: [...], time? }  — small marker, no pulse
  *   { kind: "hard", id, heading, time, tag, targetArrival, note, vibeTags, tint } — large pulsing marker
+ *   { kind: "endpoint", id, heading, tint, blocks: [...], timeFromParkHours: true } — ring marker, day's close
  *
- * `time` (optional on a flexible node; required on a hard node) is a known,
- * meaningful time MissionRail shows in its left-side time column, aligned
- * with that node's marker — hard-node time renders large/bright, a
- * flexible node's time (already written with its own "~") renders
- * smaller/softer. Leave it unset on a flexible node with no real time
- * anchor (Rendezvous, Batuu Operations, Evening Operations) rather than
- * inventing one just to fill the column.
+ * `time` (optional on "flexible"; required on "hard") is a known, meaningful
+ * time MissionRail shows in its left-side time column, aligned with that
+ * node's marker. Every time in that column renders at the SAME size/weight/
+ * line-height regardless of node kind — only its color differs, by
+ * convention: a plain clock time reads bright/neutral, an approximate one
+ * (write the "~" into the string itself, e.g. "~11:30 AM") reads softer, and
+ * a "hard" node's locked time reads in the accent amber. The type of event
+ * is communicated by the MARKER (small dot vs. large pulsing vs. ring), not
+ * by resizing the time text. Leave `time` unset on a flexible node with no
+ * real time anchor (Rendezvous, Batuu Operations) rather than inventing one
+ * just to fill the column.
+ *
+ * `timeFromParkHours: true` on an "endpoint" node tells MissionDayPage to
+ * substitute that day's actual close time from parkHours.js at render time,
+ * instead of a literal `time` string here — so publishing the real Oct 2026
+ * hours later only means editing parkHours.js, never this file or any JSX.
  *
  * `blocks` is a small, fixed set of content-block types (see RailBlocks.jsx
  * for the renderer) rather than raw JSX, specifically so Tuesday-Friday can
@@ -55,6 +65,20 @@ export const MONDAY_MISSION = {
   },
 
   rail: [
+    {
+      kind: "flexible",
+      id: "depart-for-airport",
+      heading: "DEPART FOR AIRPORT",
+      tint: "#7fa7d9",
+      time: "2:45 AM",
+      blocks: [
+        { type: "highlight", label: "MAIN SQUAD", value: "Depart Yorkville for MDW" },
+        {
+          type: "text",
+          text: "Planned departure time for the 5:00 AM Southwest flight out of Chicago Midway. Justin's leg departs separately from Austin, so this one only applies to the Main Squad.",
+        },
+      ],
+    },
     {
       kind: "flexible",
       id: "deployment",
@@ -165,6 +189,7 @@ export const MONDAY_MISSION = {
       id: "evening-ops",
       heading: "EVENING OPERATIONS",
       tint: "#5a6a9a",
+      time: "5:00 PM",
       blocks: [
         { type: "text", label: "WINDOW", text: "After Oga's → Park Close" },
         {
@@ -185,6 +210,19 @@ export const MONDAY_MISSION = {
             "Fantasmic! (if desired)",
             "Simply wander and enjoy the park",
           ],
+        },
+      ],
+    },
+    {
+      kind: "endpoint",
+      id: "park-close",
+      heading: "END OF PARK MISSION",
+      tint: "#3f4d73",
+      timeFromParkHours: true,
+      blocks: [
+        {
+          type: "text",
+          text: "Hollywood Studios operations conclude for the day — head back to basecamp whenever the squad is ready to call it.",
         },
       ],
     },

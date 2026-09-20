@@ -4,14 +4,17 @@ import { useReducedMotion } from "../hooks/useReducedMotion.js";
  * The reusable visual scaffold for a Mission Day page: a time column, a
  * continuous vertical rail, and a content column — in that order — with
  * one row per node. This component knows nothing about Monday, Batuu,
- * flights, or votes — it only knows two node kinds ("flexible" / "hard")
- * and renders whatever `content` JSX each node hands it. That's what lets
- * Tuesday-Friday reuse this exact component in Phase 4 with their own
- * nodes.
+ * flights, or votes — it only knows three node kinds ("flexible" / "hard" /
+ * "endpoint") and renders whatever `content` JSX each node hands it. That's
+ * what lets Tuesday-Friday reuse this exact component in Phase 4 with their
+ * own nodes.
  *
- * Each node: { id, kind: "flexible" | "hard", heading, tint, content, time? }
- * - kind "flexible" → small, non-pulsing marker.
- * - kind "hard"     → larger marker with a slow, subtle glow pulse.
+ * Each node: { id, kind: "flexible" | "hard" | "endpoint", heading, tint, content, time? }
+ * - kind "flexible" → small, non-pulsing dot marker. Standard rail node,
+ *                      used both for untimed nodes and plain time anchors.
+ * - kind "hard"     → larger marker with a slow, subtle glow pulse — a
+ *                      locked reservation.
+ * - kind "endpoint" → a hollow ring marker, no pulse — the day's close/end.
  * - tint            → a small accent color: colors that node's marker,
  *                      the rail segment below it, and a very soft
  *                      background wash behind its heading — this is what
@@ -23,9 +26,14 @@ import { useReducedMotion } from "../hooks/useReducedMotion.js";
  *                      never invent a time just to fill the column — most
  *                      nodes correctly leave this unset and render a blank
  *                      time cell so the rail still lines up as a straight
- *                      divider). A "hard" node's time renders large/bright;
- *                      a "flexible" node's time (already carrying its own
- *                      "~") renders smaller/softer, with no pulse.
+ *                      divider). Every node's time renders at the SAME
+ *                      size/weight/line-height/alignment — the event type
+ *                      is communicated by the marker (above), not by
+ *                      resizing the time text. Only the time's COLOR varies:
+ *                      a "hard" node's time reads in the accent amber; an
+ *                      approximate time (write the "~" into the string
+ *                      itself) reads softer/muted; a plain clock time reads
+ *                      bright/neutral.
  *
  * Layout: time-column / rail / content, left to right, at every width,
  * including mobile — there's no separate horizontal-timeline variant. Both
@@ -36,40 +44,26 @@ const TIME_COLUMN_WIDTH = "clamp(54px, 16vw, 80px)";
 const RAIL_GUTTER = 30;
 const DEFAULT_TINT = "#8fb3ff";
 
-function TimeLabel({ node }) {
-  if (node.kind === "hard") {
-    if (!node.time) return null;
-    return (
-      <span
-        style={{
-          fontFamily: "'Oswald', sans-serif",
-          fontWeight: 700,
-          fontSize: "clamp(13px, 3.4vw, 17px)",
-          color: "#ffd9ad",
-          whiteSpace: "nowrap",
-          marginTop: 1,
-        }}
-      >
-        {node.time}
-      </span>
-    );
-  }
+// One shared type treatment for every time in the column — only `color`
+// varies by node/value below. Do not fork size/weight/line-height per kind.
+const TIME_LABEL_BASE = {
+  fontFamily: "'Oswald', sans-serif",
+  fontWeight: 700,
+  fontSize: "clamp(12.5px, 3.2vw, 15px)",
+  lineHeight: 1.15,
+  whiteSpace: "nowrap",
+  marginTop: 2,
+};
 
+function timeLabelColor(node) {
+  if (node.kind === "hard") return "#ffd9ad"; // locked reservation — accent amber
+  if (typeof node.time === "string" && node.time.trim().startsWith("~")) return "#a9b4cc"; // approximate — softer
+  return "#dbe9ff"; // plain known clock time — bright/neutral
+}
+
+function TimeLabel({ node }) {
   if (!node.time) return null;
-  return (
-    <span
-      style={{
-        fontFamily: "'Oswald', sans-serif",
-        fontWeight: 600,
-        fontSize: "clamp(10.5px, 2.7vw, 13px)",
-        color: "#a9b4cc",
-        whiteSpace: "nowrap",
-        marginTop: 4,
-      }}
-    >
-      {node.time}
-    </span>
-  );
+  return <span style={{ ...TIME_LABEL_BASE, color: timeLabelColor(node) }}>{node.time}</span>;
 }
 
 function RailMarker({ kind, tint, reduced }) {
@@ -101,6 +95,24 @@ function RailMarker({ kind, tint, reduced }) {
           }}
         />
       </span>
+    );
+  }
+
+  if (kind === "endpoint") {
+    return (
+      <span
+        aria-hidden="true"
+        style={{
+          width: 14,
+          height: 14,
+          borderRadius: "50%",
+          background: "transparent",
+          border: `2px solid ${color}`,
+          boxShadow: `0 0 0 3px rgba(5,7,15,0.9), 0 0 10px ${color}66`,
+          flexShrink: 0,
+          marginTop: 2,
+        }}
+      />
     );
   }
 

@@ -94,4 +94,38 @@ describe("MONDAY_MISSION data integrity", () => {
         expect(node.blocks.length).toBeGreaterThan(0);
       });
   });
+
+  it("carries the new time anchors (depart-for-airport, evening-ops) with the exact requested values", () => {
+    const departForAirport = MONDAY_MISSION.rail.find((n) => n.id === "depart-for-airport");
+    expect(departForAirport).toBeTruthy();
+    expect(departForAirport.time).toBe("2:45 AM");
+    expect(departForAirport.kind).toBe("flexible");
+
+    const eveningOps = MONDAY_MISSION.rail.find((n) => n.id === "evening-ops");
+    expect(eveningOps).toBeTruthy();
+    expect(eveningOps.time).toBe("5:00 PM");
+  });
+
+  it("has exactly one endpoint node (park close) that sources its time from parkHours, not a literal string", () => {
+    const endpointNodes = MONDAY_MISSION.rail.filter((n) => n.kind === "endpoint");
+    expect(endpointNodes).toHaveLength(1);
+    const [parkClose] = endpointNodes;
+    expect(parkClose.timeFromParkHours).toBe(true);
+    expect(parkClose.time).toBeUndefined();
+    expect(parkClose).toBe(MONDAY_MISSION.rail[MONDAY_MISSION.rail.length - 1]); // the day's final node
+  });
+
+  it("does not add any intermediate attraction/ride times beyond the known anchors", () => {
+    // No block anywhere in Monday's config should carry a `time`/`when`-style
+    // field on individual attractions — Rise, Smugglers Run, Tower of Terror,
+    // etc. stay unscheduled opportunities inside their mission windows.
+    MONDAY_MISSION.rail.forEach((node) => {
+      (node.blocks || []).forEach((block) => {
+        if (block.type === "attractionRefs") {
+          expect(block).not.toHaveProperty("time");
+          expect(block).not.toHaveProperty("times");
+        }
+      });
+    });
+  });
 });

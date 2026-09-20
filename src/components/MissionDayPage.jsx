@@ -10,9 +10,13 @@ import { MissionRail } from "./MissionRail.jsx";
  *   2. renders the compact Operating Intel strip (park + hours + the day's
  *      one locked event, if any)
  *   3. maps `mission.rail` into MissionRail's node shape, building each
- *      node's `content` via RailBlock (flexible nodes' blocks) or
+ *      node's `content` via RailBlock (flexible/endpoint nodes' blocks) or
  *      HardNodeContent (a hard node's fixed fields) — MissionRail itself
- *      never sees mission-specific data, only the resulting JSX.
+ *      never sees mission-specific data, only the resulting JSX. A node
+ *      flagged `timeFromParkHours` gets its displayed time substituted here
+ *      from parkHours.js at render time, rather than a literal string in
+ *      the day config — so the real close time only ever needs updating in
+ *      one place.
  *
  * Tuesday-Friday reuse this component unchanged in Phase 4 — they just
  * pass their own day config.
@@ -26,7 +30,7 @@ export function MissionDayPage({ mission, votesByItem, onBack }) {
     kind: node.kind,
     heading: node.heading,
     tint: node.tint,
-    time: node.time,
+    time: node.timeFromParkHours ? hours?.close : node.time,
     content:
       node.kind === "hard" ? (
         <HardNodeContent node={node} />
