@@ -1,14 +1,15 @@
 import { useReducedMotion } from "../hooks/useReducedMotion.js";
 
 /**
- * The reusable visual scaffold for a Mission Day page: a continuous
- * vertical rail down the left side, with one marker + content row per
- * node. This component knows nothing about Monday, Batuu, flights, or
- * votes — it only knows two node kinds ("flexible" / "hard") and renders
- * whatever `content` JSX each node hands it. That's what lets Tuesday-
- * Friday reuse this exact component in Phase 4 with their own nodes.
+ * The reusable visual scaffold for a Mission Day page: a time column, a
+ * continuous vertical rail, and a content column — in that order — with
+ * one row per node. This component knows nothing about Monday, Batuu,
+ * flights, or votes — it only knows two node kinds ("flexible" / "hard")
+ * and renders whatever `content` JSX each node hands it. That's what lets
+ * Tuesday-Friday reuse this exact component in Phase 4 with their own
+ * nodes.
  *
- * Each node: { id, kind: "flexible" | "hard", heading, tint, content }
+ * Each node: { id, kind: "flexible" | "hard", heading, tint, content, time? }
  * - kind "flexible" → small, non-pulsing marker.
  * - kind "hard"     → larger marker with a slow, subtle glow pulse.
  * - tint            → a small accent color: colors that node's marker,
@@ -17,13 +18,59 @@ import { useReducedMotion } from "../hooks/useReducedMotion.js";
  *                      lets the page "subtly evolve while scrolling"
  *                      (cool → warm → warmest at the hard node → night)
  *                      without any single page-spanning effect.
+ * - time (optional) → a known, meaningful time for this node. Only nodes
+ *                      with one real anchor set it (a day config should
+ *                      never invent a time just to fill the column — most
+ *                      nodes correctly leave this unset and render a blank
+ *                      time cell so the rail still lines up as a straight
+ *                      divider). A "hard" node's time renders large/bright;
+ *                      a "flexible" node's time (already carrying its own
+ *                      "~") renders smaller/softer, with no pulse.
  *
- * Layout: rail-left / content-right at every width, including mobile —
- * there's no separate horizontal-timeline variant. The rail gutter is a
- * fixed, small width so content always keeps most of the screen.
+ * Layout: time-column / rail / content, left to right, at every width,
+ * including mobile — there's no separate horizontal-timeline variant. Both
+ * the time column and the rail gutter are fixed, small widths so content
+ * always keeps most of the screen.
  */
+const TIME_COLUMN_WIDTH = "clamp(54px, 16vw, 80px)";
 const RAIL_GUTTER = 30;
 const DEFAULT_TINT = "#8fb3ff";
+
+function TimeLabel({ node }) {
+  if (node.kind === "hard") {
+    if (!node.time) return null;
+    return (
+      <span
+        style={{
+          fontFamily: "'Oswald', sans-serif",
+          fontWeight: 700,
+          fontSize: "clamp(13px, 3.4vw, 17px)",
+          color: "#ffd9ad",
+          whiteSpace: "nowrap",
+          marginTop: 1,
+        }}
+      >
+        {node.time}
+      </span>
+    );
+  }
+
+  if (!node.time) return null;
+  return (
+    <span
+      style={{
+        fontFamily: "'Oswald', sans-serif",
+        fontWeight: 600,
+        fontSize: "clamp(10.5px, 2.7vw, 13px)",
+        color: "#a9b4cc",
+        whiteSpace: "nowrap",
+        marginTop: 4,
+      }}
+    >
+      {node.time}
+    </span>
+  );
+}
 
 function RailMarker({ kind, tint, reduced }) {
   const color = tint || DEFAULT_TINT;
@@ -79,7 +126,17 @@ function RailNodeRow({ node, nextTint, reduced, isLast }) {
   const lineTint = nextTint || tint;
 
   return (
-    <div style={{ display: "flex", alignItems: "stretch" }}>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: `${TIME_COLUMN_WIDTH} ${RAIL_GUTTER}px minmax(0, 1fr)`,
+        alignItems: "stretch",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "flex-end", textAlign: "right", paddingRight: 8 }}>
+        <TimeLabel node={node} />
+      </div>
+
       <div style={{ width: RAIL_GUTTER, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
         <RailMarker kind={node.kind} tint={tint} reduced={reduced} />
         {!isLast && (
@@ -97,7 +154,7 @@ function RailNodeRow({ node, nextTint, reduced, isLast }) {
         )}
       </div>
 
-      <div style={{ flex: 1, minWidth: 0, paddingLeft: 16, paddingBottom: isLast ? 4 : 40 }}>
+      <div style={{ minWidth: 0, paddingLeft: 16, paddingBottom: isLast ? 4 : 40 }}>
         <div
           style={{
             position: "relative",

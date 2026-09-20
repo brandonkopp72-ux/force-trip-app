@@ -26,6 +26,7 @@ export function MissionDayPage({ mission, votesByItem, onBack }) {
     kind: node.kind,
     heading: node.heading,
     tint: node.tint,
+    time: node.time,
     content:
       node.kind === "hard" ? (
         <HardNodeContent node={node} />

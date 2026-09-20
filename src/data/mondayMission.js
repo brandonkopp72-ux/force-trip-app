@@ -9,8 +9,16 @@
  *   - rail — an ordered list of nodes that attach to the Mission Rail.
  *
  * A rail node is either:
- *   { kind: "flexible", id, heading, tint, blocks: [...] }  — small marker, no pulse
+ *   { kind: "flexible", id, heading, tint, blocks: [...], time? }  — small marker, no pulse
  *   { kind: "hard", id, heading, time, tag, targetArrival, note, vibeTags, tint } — large pulsing marker
+ *
+ * `time` (optional on a flexible node; required on a hard node) is a known,
+ * meaningful time MissionRail shows in its left-side time column, aligned
+ * with that node's marker — hard-node time renders large/bright, a
+ * flexible node's time (already written with its own "~") renders
+ * smaller/softer. Leave it unset on a flexible node with no real time
+ * anchor (Rendezvous, Batuu Operations, Evening Operations) rather than
+ * inventing one just to fill the column.
  *
  * `blocks` is a small, fixed set of content-block types (see RailBlocks.jsx
  * for the renderer) rather than raw JSX, specifically so Tuesday-Friday can
@@ -73,6 +81,11 @@ export const MONDAY_MISSION = {
       id: "basecamp",
       heading: "ESTABLISH BASECAMP",
       tint: "#9a9a7f",
+      // Same value as the "TARGET INSERTION" highlight below, surfaced at
+      // the node level too so MissionRail can show it in the left time
+      // column — this is a display-layer duplication of one existing
+      // value, not a new time.
+      time: "~11:30 AM",
       blocks: [
         { type: "highlight", label: "LOCATION", value: "Universal Endless Summer — Dockside" },
         {

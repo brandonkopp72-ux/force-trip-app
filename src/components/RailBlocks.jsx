@@ -62,17 +62,25 @@ function FlightCard({ flight }) {
       <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: 12, letterSpacing: "0.08em", color: "#8fb3ff", marginBottom: 8 }}>
         {flight.label}
       </div>
-      <div style={{ fontSize: 12.5, color: "#a9b4cc", marginBottom: 4 }}>{flight.outbound.flight}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "#fff" }}>
-        <span>
-          {flight.outbound.from.code} <span style={{ fontWeight: 400, color: "#c9d3e8" }}>{flight.outbound.from.time}</span>
+      <div style={{ fontSize: 12.5, color: "#a9b4cc", marginBottom: 8 }}>{flight.outbound.flight}</div>
+      {/* Time-led: each leg's clock time is the first thing read, with the
+          airport/direction as supporting detail beside it — same left-time
+          treatment MissionRail uses for the rail itself. */}
+      <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", columnGap: 10, rowGap: 5, alignItems: "baseline" }}>
+        <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: 15, color: "#ffd9ad", whiteSpace: "nowrap" }}>
+          {flight.outbound.from.time}
         </span>
-        <span style={{ color: "#6b7690" }}>→</span>
-        <span>
-          {flight.outbound.to.code} <span style={{ fontWeight: 400, color: "#c9d3e8" }}>{flight.outbound.to.time}</span>
+        <span style={{ fontSize: 12.5, color: "#dbe9ff" }}>
+          <span style={{ fontWeight: 700, color: "#fff" }}>{flight.outbound.from.code}</span> · Depart
+        </span>
+        <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: 15, color: "#ffd9ad", whiteSpace: "nowrap" }}>
+          {flight.outbound.to.time}
+        </span>
+        <span style={{ fontSize: 12.5, color: "#dbe9ff" }}>
+          <span style={{ fontWeight: 700, color: "#fff" }}>{flight.outbound.to.code}</span> · Arrive
         </span>
       </div>
-      <div style={{ fontSize: 11.5, color: "#7c88a6", marginTop: 6 }}>{flight.travelers.length > 1 ? `${flight.travelers.length} travelers` : flight.travelers[0]}</div>
+      <div style={{ fontSize: 11.5, color: "#7c88a6", marginTop: 8 }}>{flight.travelers.length > 1 ? `${flight.travelers.length} travelers` : flight.travelers[0]}</div>
     </div>
   );
 }
@@ -236,11 +244,11 @@ export function HardNodeContent({ node }) {
         boxShadow: "0 0 24px rgba(224,163,77,0.12)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
-        <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: 26, color: "#ffd9ad", letterSpacing: "0.02em" }}>
-          {node.time}
-        </span>
-        {node.tag && (
+      {/* The reservation time itself now leads via MissionRail's left-side
+          time column (aligned with this node's marker), so it isn't
+          repeated here — this card leads with the tag instead. */}
+      {node.tag && (
+        <div style={{ marginBottom: 10 }}>
           <span
             style={{
               fontFamily: "'Oswald', sans-serif",
@@ -255,8 +263,8 @@ export function HardNodeContent({ node }) {
           >
             {node.tag}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {node.targetArrival && (
         <div style={{ ...labelText, marginBottom: 10 }}>
