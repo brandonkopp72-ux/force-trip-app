@@ -849,9 +849,17 @@ export const PARKS = [
     missionLog: "Last transmission before we ship out — spend it however you want.",
     accent: "#8a6d1f",
     accentSoft: "#f3ecd8",
+    // Phase 6 audit fix: this used to say a single "~5:00 PM" flight/Uber
+    // plan, written before Justin's itinerary was split out onto its own
+    // flight — that's now stale and inconsistent with the real locked data
+    // (flights.js) and with this same day's own rail text in
+    // fridayMission.js, which already correctly references both times.
     arrivalNote:
-      "Flight is ~5:00 PM — call an Uber to MCO by 2:00 PM (airport by 3:00). That leaves a partial morning — pick the plan below before Friday so everyone's on the same page.",
-    learnMoreUrl: "https://www.orlandoairports.net",
+      "Justin boards at 5:25 PM, the Main Squad at 6:30 PM — build your Dockside departure backward from whichever boarding time applies to you, with buffer for Orlando traffic, rideshare/rental drop-off, and TSA. That leaves a partial morning — pick the plan below before Friday so everyone's on the same page.",
+    // Phase 6 audit fix: orlandoairports.net now just redirects here — MCO's
+    // own site has moved to this domain, so linking it directly instead of
+    // through a redirect (verified live Sept 20, 2026).
+    learnMoreUrl: "https://www.flymco.com",
     learnMoreLabel: "Orlando International Airport (MCO) — official site",
     isDeparture: true,
     lands: [
@@ -913,4 +921,14 @@ const VOTABLE_ITEM_BY_ID = new Map(getAllVotableRideItems().map((item) => [item.
 /** Resolves a votable ride/show id (e.g. "hs-rise") to its full PARKS item, or null if unknown. */
 export function getVotableItemById(id) {
   return VOTABLE_ITEM_BY_ID.get(id) || null;
+}
+
+/**
+ * Resolves a park id (e.g. "usf") to its real display name (e.g.
+ * "Universal Studios Florida"), or null if unknown — so a park's name is
+ * only ever spelled out once (here), rather than re-typed as a separate
+ * string literal anywhere that also has the park's id (Phase 6 audit).
+ */
+export function getParkNameById(id) {
+  return PARKS.find((p) => p.id === id)?.park || null;
 }

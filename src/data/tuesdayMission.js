@@ -13,6 +13,15 @@ import { buildEntertainmentNode } from "./nighttimeEntertainment.js";
 // Hogwarts Always — a real Universal nighttime projection show, but one
 // that doesn't run every night. Stays empty (renders nothing) until a
 // confirmed October 20, 2026 performance is actually on the calendar.
+//
+// Phase 6 research (Sept 20, 2026): as of this check, Universal has not
+// published a day-by-day calendar for Hogwarts Always at all — and a
+// separate, newer show ("Dark Arts at Hogwarts Castle") is running select
+// nights in this same window without a published schedule either. Which
+// show (if either) plays October 20, and at what time, is genuinely
+// unknown right now — not just "not yet checked." Leave this empty until
+// one of them actually publishes a dated showtime; don't guess which show
+// it'll be.
 export const TUESDAY_NIGHTTIME_ENTERTAINMENT = [
   // { title: "HOGWARTS ALWAYS", time: "8:00 PM", type: "projection", status: "confirmed", url: "" },
 ];
@@ -38,13 +47,17 @@ export const TUESDAY_MISSION = {
   // Islands of Adventure and Universal Studios Florida are technically in
   // play today — but Tuesday stays primarily an Islands page (see the rail
   // below: only ioa-* attractions). This is compact trip intel, not a
-  // second park's worth of attraction cards. `flowNote` is the one thing
-  // that differs from Thursday's own parkToParkIntel — everything else
+  // second park's worth of attraction cards. `flowNote` and `secondaryParkId`
+  // are what differ from Thursday's own parkToParkIntel — everything else
   // renders through the exact same ParkToParkIntelStrip in
   // MissionDayPage.jsx ("same information architecture" both days).
   parkToParkIntel: {
     enabled: true,
     primaryPark: "Islands of Adventure",
+    // Phase 6: lets ParkToParkIntelStrip show USF's real hours for today
+    // (from parkHours.js) next to the crossing intel — useful for deciding
+    // whether a crossing is worth it.
+    secondaryParkId: "usf",
     trainObjective: true,
     flowNote:
       "Start in Islands / Hogsmeade. If it fits the day, cross to Universal Studios via Hogwarts Express — USF can become an optional side excursion, with a return to Islands or on into CityWalk depending on energy and hours.",

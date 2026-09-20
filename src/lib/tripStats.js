@@ -177,6 +177,21 @@ export function buildFridayReadiness(votesByItem) {
 }
 
 /**
+ * Phase 6: which heading FridayDecisionBlock (RailBlocks.jsx) should show —
+ * pulled out as its own pure function so this logic is unit-testable
+ * without rendering the component. "CURRENT PLAN" (or whatever the mission
+ * config's own `decidedHeading` says) only once the whole squad has
+ * actually decided (`readiness.squadDecided` — genuinely all six, from
+ * buildFridayReadiness above); "CURRENT LEADER" otherwise. Deliberately
+ * NOT based on vote count or which option is furthest ahead — a leading
+ * option with only 2 of 6 opinions in is still just a leader, never
+ * inferred as the finalized plan merely for being ahead.
+ */
+export function getFridayDecisionHeading(readiness, decidedHeading = "CURRENT PLAN") {
+  return readiness.squadDecided ? decidedHeading || "CURRENT PLAN" : "CURRENT LEADER";
+}
+
+/**
  * Rations readiness — also kept separate from buildParkReadiness since
  * dining isn't a fixed-item-set attraction vote. A person counts as
  * "reviewed" once every item in the live ALL_DINING list (sit-down + quick

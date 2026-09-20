@@ -14,9 +14,11 @@ import { buildEntertainmentNode } from "./nighttimeEntertainment.js";
  *   { kind: "flexible", id, heading, tint, blocks: [...], time? }  — small marker, no pulse
  *   { kind: "hard", id, heading, time, tag, targetArrival, note, vibeTags, tint } — large pulsing marker
  *   { kind: "endpoint", id, heading, tint, blocks: [...], timeFromParkHours: true } — ring marker, day's close
- *     (a standalone close-of-day node; not currently used by Monday, which
- *     folds its close time into Evening Operations' range instead — kept
- *     available for a day that wants a distinct final marker in Phase 4)
+ *     (a standalone close-of-day node — Monday's Evening Operations ALSO
+ *     shows its own "5:00–<close> PM" range via rangeEndFromParkHours, and
+ *     Monday additionally carries its own separate Park Close endpoint
+ *     after it, per the Phase 5 correction pass — see the bottom of
+ *     MONDAY_MISSION.rail below)
  *
  * `time` (optional on "flexible"; required on "hard") is a known, meaningful
  * time MissionRail shows in its left-side time column, aligned with that
@@ -65,12 +67,22 @@ import { buildEntertainmentNode } from "./nighttimeEntertainment.js";
 // Phase 4 spec's nighttime-entertainment exception): a real, confirmed
 // Fantasmic! showtime, once Disney publishes one for October 19, 2026. Until
 // then this stays empty and buildEntertainmentNode() below refuses to
-// produce a node at all — Monday's rail stays exactly the same six nodes it
-// already had. If multiple performances are ever confirmed for the night,
-// list them all here, but by default only the first entry is surfaced (the
-// one we intend to target), per spec.
+// produce a node at all — Monday's rail stays exactly the same seven nodes
+// it already had (six original phases, plus Phase 5's Park Close endpoint).
+// If Fantasmic performs more than once that night, list every confirmed
+// time in one entry's `times` array (see nighttimeEntertainment.js) rather
+// than guessing which show to target — the rail anchors on the earliest and
+// lists the rest underneath.
+//
+// Phase 6 research (Sept 20, 2026): no October 19-specific Fantasmic!
+// showtime is published yet — Disney's own Fantasmic page still only shows
+// generic, "subject to change" times and points to the day-specific
+// Entertainment Schedule. Worth knowing: Fantasmic has recently run mainly
+// Friday/Saturday nights rather than nightly, so it's genuinely unclear
+// whether it'll even run on our Monday — that's exactly why this stays
+// empty rather than assuming an 8:00 PM slot.
 export const MONDAY_NIGHTTIME_ENTERTAINMENT = [
-  // { title: "FANTASMIC!", time: "8:00 PM", type: "show", status: "confirmed", url: "" },
+  // { title: "FANTASMIC!", times: ["8:00 PM"], type: "show", status: "confirmed", url: "" },
 ];
 
 const fantasmicNode = buildEntertainmentNode(MONDAY_NIGHTTIME_ENTERTAINMENT[0], {

@@ -85,8 +85,10 @@ describe("Phase 4 (Tuesday-Friday) data integrity", () => {
       it("resolves against a real, known parkId", () => {
         // "friday" is the existing departure-day PARKS entry, not a
         // parkHours.js entry — getParkHours legitimately returns null there.
+        // ioa/usf need the day id too (Phase 6: they carry different hours
+        // on different visit days) — see parkHours.js.
         if (mission.parkId !== "friday") {
-          expect(getParkHours(mission.parkId), `expected parkHours entry for "${mission.parkId}"`).not.toBeNull();
+          expect(getParkHours(mission.parkId, mission.id), `expected parkHours entry for "${mission.parkId}"`).not.toBeNull();
         }
       });
     });
@@ -184,19 +186,46 @@ describe("buildEntertainmentNode", () => {
   });
 });
 
-describe("Nighttime entertainment stays off by default", () => {
-  it("Monday, Tuesday, Wednesday, and Thursday's HHN config all start with nothing confirmed", () => {
-    [MONDAY_NIGHTTIME_ENTERTAINMENT, TUESDAY_NIGHTTIME_ENTERTAINMENT, WEDNESDAY_NIGHTTIME_ENTERTAINMENT, THURSDAY_HHN_ENTERTAINMENT].forEach(
-      (entries) => {
-        expect(entries.every((e) => e.status !== "confirmed")).toBe(true);
-      }
-    );
+describe("Nighttime entertainment stays off by default (Phase 6 exception: Thursday's two HHN live shows are now confirmed)", () => {
+  it("Monday, Tuesday, and Wednesday's nighttime-show config all still start with nothing confirmed (no dated showtime has actually been published for any of them)", () => {
+    [MONDAY_NIGHTTIME_ENTERTAINMENT, TUESDAY_NIGHTTIME_ENTERTAINMENT, WEDNESDAY_NIGHTTIME_ENTERTAINMENT].forEach((entries) => {
+      expect(entries.every((e) => e.status !== "confirmed")).toBe(true);
+    });
   });
 
-  it("no mission's rail currently contains an entertainment node (nothing is confirmed yet)", () => {
-    [MONDAY_MISSION, ...ALL_PHASE4_MISSIONS].forEach((mission) => {
+  it("Thursday's HHN entertainment config carries two confirmed live shows, each with real published showtimes", () => {
+    expect(THURSDAY_HHN_ENTERTAINMENT).toHaveLength(2);
+    THURSDAY_HHN_ENTERTAINMENT.forEach((entry) => {
+      expect(entry.status).toBe("confirmed");
+      expect(Array.isArray(entry.times)).toBe(true);
+      expect(entry.times.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("Monday, Tuesday, and Wednesday's rail still contains no entertainment node (nothing confirmed for those days)", () => {
+    [MONDAY_MISSION, TUESDAY_MISSION, WEDNESDAY_MISSION].forEach((mission) => {
       expect(mission.rail.some((n) => n.kind === "entertainment")).toBe(false);
     });
+  });
+
+  it("Thursday's rail contains exactly the two confirmed HHN entertainment nodes, each anchored on its earliest showtime", () => {
+    const entertainmentNodes = THURSDAY_MISSION.rail.filter((n) => n.kind === "entertainment");
+    expect(entertainmentNodes).toHaveLength(2);
+
+    const bloodNoir = entertainmentNodes.find((n) => n.heading === "NIGHTMARE FUEL: BLOOD NOIR");
+    expect(bloodNoir.time).toBe("8:00 PM");
+    expect(bloodNoir.additionalTimes).toEqual(["9:30 PM", "11:00 PM", "12:30 AM"]);
+
+    const strangerThings = entertainmentNodes.find((n) => n.heading === "STRANGER THINGS: RETURN TO HAWKINS");
+    expect(strangerThings.time).toBe("9:00 PM");
+    expect(strangerThings.additionalTimes).toEqual(["9:45 PM", "10:30 PM", "11:15 PM", "12:00 AM", "12:45 AM"]);
+
+    // Neither entry guesses a "preferred" performance.
+    entertainmentNodes.forEach((n) => expect(n.preferredTime).toBeUndefined());
+  });
+
+  it("Friday's rail (no HHN, no nighttime show config at all) has no entertainment node", () => {
+    expect(FRIDAY_MISSION.rail.some((n) => n.kind === "entertainment")).toBe(false);
   });
 });
 
@@ -332,16 +361,18 @@ describe("Correction pass: approximate afternoon time anchors", () => {
 });
 
 describe("Correction pass: Park-to-Park Intel config", () => {
-  it("is enabled on Tuesday and Thursday (the two Park-to-Park days), pointing at each day's own primary park", () => {
+  it("is enabled on Tuesday and Thursday (the two Park-to-Park days), pointing at each day's own primary park (and the OTHER park as secondary, for Phase 6's hours lookup)", () => {
     expect(TUESDAY_MISSION.parkToParkIntel).toEqual({
       enabled: true,
       primaryPark: "Islands of Adventure",
+      secondaryParkId: "usf",
       trainObjective: true,
       flowNote: expect.any(String),
     });
     expect(THURSDAY_MISSION.parkToParkIntel).toEqual({
       enabled: true,
       primaryPark: "Universal Studios Florida",
+      secondaryParkId: "ioa",
       trainObjective: true,
       flowNote: expect.any(String),
     });

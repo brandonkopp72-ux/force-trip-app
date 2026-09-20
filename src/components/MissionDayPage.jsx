@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { getParkHours, formatEveningWindow } from "../data/parkHours.js";
+import { getParkNameById } from "../data/parks.js";
 import { getDayPageBackground } from "../data/dayThemes.js";
 import { useReducedMotion } from "../hooks/useReducedMotion.js";
 import { RailBlock, HardNodeContent, EntertainmentNodeContent } from "./RailBlocks.jsx";
@@ -64,10 +65,13 @@ import { DayNavDock } from "./DayNavDock.jsx";
  *     spec's "do not preserve the previous day's scroll position."
  */
 export function MissionDayPage({ mission, votesByItem, topPicks, onBack, onNavigateDay }) {
-  const hours = getParkHours(mission.parkId);
+  // ioa/usf carry different hours on different visit days (Tuesday vs.
+  // Thursday), so getParkHours needs the day id too — see parkHours.js.
+  // It's simply ignored for parks with one flat entry (hs/epic/hhn).
+  const hours = getParkHours(mission.parkId, mission.id);
   const { operatingIntel } = mission;
   const secondary = mission.secondaryOperatingIntel;
-  const secondaryHours = secondary ? getParkHours(secondary.parkId) : null;
+  const secondaryHours = secondary ? getParkHours(secondary.parkId, mission.id) : null;
   const reduced = useReducedMotion();
   const pageBackground = getDayPageBackground(mission.id);
 
@@ -197,7 +201,15 @@ export function MissionDayPage({ mission, votesByItem, topPicks, onBack, onNavig
           />
         )}
         {mission.parkToParkIntel?.enabled && (
-          <ParkToParkIntelStrip intel={mission.parkToParkIntel} accent={mission.accent} />
+          <ParkToParkIntelStrip
+            intel={mission.parkToParkIntel}
+            accent={mission.accent}
+            secondaryHours={
+              mission.parkToParkIntel.secondaryParkId
+                ? getParkHours(mission.parkToParkIntel.secondaryParkId, mission.id)
+                : null
+            }
+          />
         )}
       </div>
 
@@ -277,8 +289,15 @@ const intelLabelStyle = {
  * over is communicated as flexible trip intel, not attraction-card clutter,
  * per the spec ("expand options without making the page twice as dense").
  * No completion tracking, no checkbox for whether the train got ridden.
+ *
+ * Phase 6 addition: `secondaryHours` (resolved by MissionDayPage via
+ * `mission.parkToParkIntel.secondaryParkId`) surfaces the OTHER park's
+ * hours today, since that's genuinely useful if you're deciding whether a
+ * crossing is worth it — without standing up a whole second
+ * OperatingIntelStrip section (this stays the one compact box). Renders
+ * nothing extra if the secondary park's hours aren't resolved for this day.
  */
-function ParkToParkIntelStrip({ intel, accent }) {
+function ParkToParkIntelStrip({ intel, accent, secondaryHours }) {
   return (
     <div
       style={{
@@ -305,6 +324,16 @@ function ParkToParkIntelStrip({ intel, accent }) {
         <span aria-hidden="true" style={{ color: "#8fb3ff", fontSize: 16, lineHeight: 1 }}>↕</span>
         <StationChip station="KING'S CROSS STATION" parkLabel="Universal Studios Florida" />
       </div>
+
+      {secondaryHours && (
+        <div style={{ fontSize: 12, color: "#a9b4cc", marginBottom: intel.trainObjective || intel.flowNote ? 10 : 0 }}>
+          {getParkNameById(intel.secondaryParkId)} today, if you cross over:{" "}
+          <span style={{ color: "#dbe9ff", fontWeight: 700 }}>
+            {secondaryHours.open} – {secondaryHours.close}
+            {secondaryHours.confirmed ? "" : " (est.)"}
+          </span>
+        </div>
+      )}
 
       {intel.trainObjective && (
         <div style={{ marginBottom: intel.flowNote ? 10 : 0 }}>

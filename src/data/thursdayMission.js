@@ -1,4 +1,4 @@
-import { buildEntertainmentNode } from "./nighttimeEntertainment.js";
+import { buildEntertainmentNodes } from "./nighttimeEntertainment.js";
 
 /**
  * Thursday's Mission Rail content — Universal Studios Florida by day, Ava's
@@ -25,6 +25,14 @@ import { buildEntertainmentNode } from "./nighttimeEntertainment.js";
 export const AVA_BIRTHDAY = {
   restaurant: null, // e.g. "Toothsome Chocolate Emporium"
   time: null, // e.g. "7:00 PM"
+  // Phase 6: tracks the reservation lifecycle explicitly rather than just
+  // inferring it from restaurant/time being set — "pending" until someone
+  // actually books it, at which point set it to "confirmed" alongside
+  // restaurant/time. Not read by buildAvaBirthdayNode below (that still
+  // keys off restaurant+time, unchanged), but keeps this config honest
+  // about status for anyone editing it, and is available for the UI later
+  // without a schema change.
+  reservationStatus: "pending",
 };
 
 /**
@@ -66,16 +74,37 @@ export function buildAvaBirthdayNode(config = AVA_BIRTHDAY) {
   };
 }
 
-// HHN's own live-entertainment slot (a specific stage/lagoon show with a
-// published starting time) is a DIFFERENT thing from the vote-ranked house/
-// show list below — this is for an actual scheduled performance time, once
-// Universal publishes one for October 22, 2026. Stays empty until then.
+// HHN's own live-entertainment slots (a specific stage/lagoon show with
+// published starting times) are a DIFFERENT thing from the vote-ranked
+// house/show list below.
+//
+// Phase 6 research (Sept 20, 2026): both shows below have published nightly
+// showtimes for the HHN 35 season (Aug 28 – Nov 1, 2026, which covers our
+// Oct 22 visit), reported without qualification as officially published —
+// WDWNT, "Nightmare Fuel and Stranger Things Lagoon Show Times Revealed for
+// Halloween Horror Nights 35" (Aug 2026). Each show repeats several times a
+// night; every published time is kept (see `times` below and
+// buildEntertainmentNodes in nighttimeEntertainment.js) rather than picking
+// one — nothing here guesses which performance the family will attend.
 export const THURSDAY_HHN_ENTERTAINMENT = [
-  // { title: "STRANGER THINGS: RETURN TO HAWKINS", time: "9:15 PM", type: "liveEntertainment", status: "confirmed", url: "" },
+  {
+    title: "NIGHTMARE FUEL: BLOOD NOIR",
+    times: ["8:00 PM", "9:30 PM", "11:00 PM", "12:30 AM"],
+    type: "stunt",
+    status: "confirmed",
+    url: "",
+  },
+  {
+    title: "STRANGER THINGS: RETURN TO HAWKINS",
+    times: ["9:00 PM", "9:45 PM", "10:30 PM", "11:15 PM", "12:00 AM", "12:45 AM"],
+    type: "liveEntertainment",
+    status: "confirmed",
+    url: "",
+  },
 ];
 
-const hhnEntertainmentNode = buildEntertainmentNode(THURSDAY_HHN_ENTERTAINMENT[0], {
-  id: "hhn-entertainment",
+const hhnEntertainmentNodes = buildEntertainmentNodes(THURSDAY_HHN_ENTERTAINMENT, {
+  idPrefix: "hhn-entertainment",
   tint: "#7a1f1f",
 });
 
@@ -105,6 +134,9 @@ export const THURSDAY_MISSION = {
   parkToParkIntel: {
     enabled: true,
     primaryPark: "Universal Studios Florida",
+    // Phase 6: lets ParkToParkIntelStrip show Islands of Adventure's real
+    // hours for today (from parkHours.js) next to the crossing intel.
+    secondaryParkId: "ioa",
     trainObjective: true,
     flowNote:
       "Start in Universal Studios. If it fits during the daytime window, cross to Islands of Adventure via Hogwarts Express. Universal Studios remains the day's main operational base for the birthday and HHN portion of the night — no required return time set yet.",
@@ -247,7 +279,7 @@ export const THURSDAY_MISSION = {
         },
       ],
     },
-    hhnEntertainmentNode,
+    ...hhnEntertainmentNodes,
     {
       kind: "endpoint",
       id: "hhn-close",

@@ -43,6 +43,10 @@ export const FRIDAY_MISSION = {
           text: "We have the Park Hopper, so both parks are on the table if we move fast. No new voting here — this reads the squad's existing plan below.",
         },
         {
+          // Phase 6: "CURRENT PLAN" below is only shown once all six have
+          // actually decided — FridayDecisionBlock in RailBlocks.jsx swaps
+          // in "CURRENT LEADER" on its own until then, so a highest-voted
+          // option is never presented as more final than it really is.
           type: "fridayDecision",
           heading: "CURRENT PLAN",
         },

@@ -1,6 +1,6 @@
 import { FLIGHT_ITINERARIES } from "../data/flights.js";
 import { getVotableItemById } from "../data/parks.js";
-import { rankItemsByPositiveVotes, getDiningConsensusRanking, buildFridayReadiness } from "../lib/tripStats.js";
+import { rankItemsByPositiveVotes, getDiningConsensusRanking, buildFridayReadiness, getFridayDecisionHeading } from "../lib/tripStats.js";
 import { VoteBadge } from "./VoteBadge.jsx";
 
 const mutedText = { fontSize: 13.5, color: "#c9d3e8", lineHeight: 1.5 };
@@ -288,9 +288,21 @@ function LinkListBlock({ block }) {
  * through V1's normal single-choice voting) — no new voting surface, just
  * live per-option counts via the same buildFridayReadiness helper V1's
  * readiness tracking already uses.
+ *
+ * Phase 6: the heading reads "CURRENT PLAN" only once the squad has
+ * actually finished deciding (`readiness.squadDecided` — every one of the
+ * six has explicitly chosen an option), and "CURRENT LEADER" otherwise —
+ * see getFridayDecisionHeading in lib/tripStats.js (pulled out to its own
+ * pure, unit-tested function). Deliberately NOT based on vote count/which
+ * option is ahead — a leading option with only 2 of 6 people weighed in is
+ * still just a leader, not a finalized plan, however far ahead it is.
+ * `block.heading` (the mission file's own config) is used only as the
+ * "decided" label, so a day config could someday rename it without
+ * touching this logic.
  */
 function FridayDecisionBlock({ block, votesByItem }) {
   const readiness = buildFridayReadiness(votesByItem);
+  const heading = getFridayDecisionHeading(readiness, block.heading);
   const counts = {};
   Object.values(readiness.choiceByPerson).forEach((id) => {
     if (id) counts[id] = (counts[id] || 0) + 1;
@@ -299,7 +311,7 @@ function FridayDecisionBlock({ block, votesByItem }) {
 
   return (
     <div>
-      {block.heading && <div style={{ ...labelText, marginBottom: 8 }}>{block.heading}</div>}
+      {heading && <div style={{ ...labelText, marginBottom: 8 }}>{heading}</div>}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {options.map(([id, name]) => (
           <div
@@ -506,8 +518,16 @@ export function EntertainmentNodeContent({ node }) {
       }}
     >
       {node.entertainmentType && (
-        <div style={{ ...labelText, color: tint, marginBottom: node.url ? 8 : 0 }}>
+        <div style={{ ...labelText, color: tint, marginBottom: node.additionalTimes || node.url ? 8 : 0 }}>
           {node.entertainmentType.replace(/([A-Z])/g, " $1").toUpperCase().trim()}
+        </div>
+      )}
+      {/* Phase 6: a show with more than one nightly performance lists the
+          rest here — the rail's own time label above only anchors on the
+          earliest one, chronologically, never a guessed "best" pick. */}
+      {node.additionalTimes && node.additionalTimes.length > 0 && (
+        <div style={{ fontSize: 12, color: "#a9b4cc", marginBottom: node.url ? 8 : 0 }}>
+          Also at: {node.additionalTimes.join(" · ")}
         </div>
       )}
       {node.url && (

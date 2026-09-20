@@ -8,13 +8,18 @@ import { buildEntertainmentNode } from "./nighttimeEntertainment.js";
  * an intentionally open dinner phase.
  */
 
-// The architecture supports an Epic Universe nighttime show/fireworks slot,
-// but Universal hasn't announced a regular one the way Disney has
-// Fantasmic — so this stays empty rather than guessing one exists. If a
-// confirmed October 21, 2026 show is ever announced, add it here and it
-// appears on the rail automatically.
+// Phase 6 research (Sept 20, 2026): Universal does now run a nightly Epic
+// Universe show, "Universal Celestial Goodnight" (usually ~30 min after
+// close). But as of this check, its pyrotechnics went down for a technical
+// issue around Sept 14, 2026 with no repair timeline given — so whether it
+// (or its fireworks specifically) will be running by Oct 21 is genuinely
+// unknown, not just unannounced. Per the spec ("do not create a generic
+// fireworks entry" for an unconfirmed show), this stays empty rather than
+// guessing it'll be back. If Universal confirms it's running again before
+// the trip, add it here with its real showtime and it appears on the rail
+// automatically — no other code change needed.
 export const WEDNESDAY_NIGHTTIME_ENTERTAINMENT = [
-  // { title: "", time: "", type: "show", status: "confirmed", url: "" },
+  // { title: "UNIVERSAL CELESTIAL GOODNIGHT", time: "", type: "show", status: "confirmed", url: "" },
 ];
 
 const epicNighttimeNode = buildEntertainmentNode(WEDNESDAY_NIGHTTIME_ENTERTAINMENT[0], {
@@ -47,9 +52,16 @@ export const WEDNESDAY_MISSION = {
       timeFromParkHours: "open",
       blocks: [
         {
+          // Phase 6 research (Sept 20, 2026): Dockside guests reach Epic
+          // Universe by shuttle bus — that's the standard/confirmed method
+          // for on-site hotels without direct walking access (only Helios
+          // Grand and Stella Nova connect on foot; there's no water taxi to
+          // Epic the way CityWalk-adjacent hotels get one). No specific
+          // shuttle departure time or frequency is published, so none is
+          // given here.
           type: "text",
           label: "GETTING THERE",
-          text: "Epic Universe has its own dedicated entrance, separate from the Universal Studios / Islands of Adventure / CityWalk complex — plan for extra transit time (shuttle or rideshare) getting there, especially first thing in the morning. Exact departure time from Dockside isn't set yet.",
+          text: "Epic Universe has its own dedicated entrance, separate from the Universal Studios / Islands of Adventure / CityWalk complex. From Dockside, that means the Epic Universe shuttle bus (not the CityWalk water taxi/walking path) — plan for extra transit time, especially first thing in the morning. Exact shuttle departure time isn't published; build in a buffer.",
         },
         {
           type: "attractionRefs",
