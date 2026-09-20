@@ -34,6 +34,24 @@ import { FiveDaysPage } from "./FiveDaysPage.jsx";
  */
 export function V2Shell({ onReturnToFinalApproach, votesByItem, topPicks }) {
   const [screen, setScreen] = useState("loadout");
+  // Phase 7 QA fix: FiveDaysPage owns its own activeDayId drill-down state
+  // internally, so it only resets to the grid when the component actually
+  // remounts. That happens naturally when navigating AWAY to Loadout/Intel
+  // and back (the {screen === "fiveDays" && <FiveDaysPage/>} line below
+  // unmounts/remounts it) — but clicking the top "FIVE DAYS" pill while
+  // ALREADY on that screen previously left `screen` unchanged (same string
+  // value), so nothing re-rendered and a deep Mission Rail page stayed on
+  // screen: a real, visible nav control that silently did nothing. Bumping
+  // this key on every "fiveDays" selection (even a repeat one) forces a
+  // fresh FiveDaysPage mount every time, so the top pill reliably means
+  // "go to the Five Days grid" the same way the page's own "← FIVE DAYS"
+  // link and the bottom dock's "FIVE DAYS" button already do.
+  const [fiveDaysResetKey, setFiveDaysResetKey] = useState(0);
+
+  const handleSelectScreen = (id) => {
+    if (id === "fiveDays") setFiveDaysResetKey((k) => k + 1);
+    setScreen(id);
+  };
 
   return (
     <div
@@ -70,7 +88,7 @@ export function V2Shell({ onReturnToFinalApproach, votesByItem, topPicks }) {
         }
       `}</style>
 
-      <V2Nav active={screen} onSelect={setScreen} onReturnToFinalApproach={onReturnToFinalApproach} />
+      <V2Nav active={screen} onSelect={handleSelectScreen} onReturnToFinalApproach={onReturnToFinalApproach} />
 
       {/* Phase 5 desktop polish: a modest maxWidth bump (960 -> 1040) gives
           the Loadout/Intel/Five-Days card grids room for a bit more
@@ -81,7 +99,7 @@ export function V2Shell({ onReturnToFinalApproach, votesByItem, topPicks }) {
       <div style={{ flex: 1, width: "100%", maxWidth: 1040, margin: "0 auto", padding: "0 16px 48px", boxSizing: "border-box" }}>
         {screen === "loadout" && <MissionLoadoutPage />}
         {screen === "intel" && <MissionIntelPage />}
-        {screen === "fiveDays" && <FiveDaysPage votesByItem={votesByItem} topPicks={topPicks} />}
+        {screen === "fiveDays" && <FiveDaysPage key={fiveDaysResetKey} votesByItem={votesByItem} topPicks={topPicks} />}
       </div>
     </div>
   );

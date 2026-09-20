@@ -199,7 +199,10 @@ export function MissionIntelPage() {
         <div style={{ fontSize: 12, letterSpacing: "0.2em", color: "#8fb3ff", marginTop: 6 }}>KNOW THE BATTLEFIELD</div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 18 }}>
+      {/* Phase 7 QA fix: same defensive min(...,100%) guard as RailBlocks'
+          AttractionRefsBlock — a bare 300px minimum can render slightly
+          wider than its own grid cell on the narrowest phones. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 18 }}>
         {MISSION_INTEL_ITEMS.map((item, i) => (
           <IntelCard key={item.id} item={item} index={i} reduced={reduced} />
         ))}

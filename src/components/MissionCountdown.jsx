@@ -40,8 +40,18 @@ export function MissionCountdown({ style }) {
   const { days, hours, minutes, seconds } = computeParts(now);
   const label = `${pad(days)}:${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 
+  // A plural-aware spoken form for the aria-label ("1 day" vs "2 days") —
+  // read on demand by a screen reader (e.g. focusing/browsing to this
+  // element), not pushed via aria-live: the spec is explicit that the
+  // countdown needs a useful label but must NOT re-announce on every tick.
+  const unit = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const spokenLabel = `${unit(days, "day")}, ${unit(hours, "hour")}, ${unit(minutes, "minute")}, ${unit(
+    seconds,
+    "second"
+  )} until mission launch`;
+
   return (
-    <div style={style}>
+    <div style={style} role="timer" aria-label={spokenLabel}>
       <style>{`
         @keyframes forceCountdownPulse {
           0% { opacity: 0.82; }
@@ -50,9 +60,14 @@ export function MissionCountdown({ style }) {
         }
       `}</style>
       {/* key={label} restarts the pulse animation exactly on each real tick,
-          rather than looping on its own independent clock. */}
+          rather than looping on its own independent clock. The digits
+          themselves are hidden from assistive tech (the parent's
+          role="timer" + aria-label above already gives a real, readable
+          value) so a screen reader doesn't also read the raw DD:HH:MM:SS
+          string right alongside it. */}
       <span
         key={label}
+        aria-hidden="true"
         style={{
           display: "inline-block",
           fontFamily: "'Oswald', sans-serif",

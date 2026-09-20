@@ -169,7 +169,9 @@ export function CinematicIntro({ mode = "onboarding", onCtaClick, onExitComplete
 
   return (
     <div
-      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-label="F.O.R.C.E. mission briefing"
       onTransitionEnd={(e) => {
         if (stage === "exiting" && e.propertyName === "opacity") {
           onExitComplete();

@@ -110,7 +110,13 @@ function AttractionRefsBlock({ block, votesByItem }) {
     return (
       <div>
         {block.heading && <div style={{ ...labelText, marginBottom: 10 }}>{block.heading}</div>}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+        {/* Phase 7 QA fix: a bare 220px minimum forces overflow on Mission
+            Rail pages at narrow phone widths, where the time-column +
+            rail-gutter + padding chrome leaves less than 220px of actual
+            content width available. min(220px, 100%) keeps the same
+            220px-preferred card width on anything roomy enough while never
+            forcing a card wider than its parent on the narrowest phones. */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 10 }}>
           {items.map(({ id, item }) => (
             <div
               key={id}

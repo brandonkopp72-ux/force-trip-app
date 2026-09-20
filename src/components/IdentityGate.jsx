@@ -48,6 +48,7 @@ export function IdentityGate({ onLogin, loginError }) {
         onChange={(e) => setPinInput(e.target.value.replace(/\D/g, "").slice(0, 4))}
         onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
         placeholder="••••"
+        aria-label={`${selected}'s 4-digit PIN`}
       />
       {loginError && <div className="error-text">{loginError}</div>}
       <button className="primary-btn" onClick={handleSubmit} disabled={submitting || pinInput.length !== 4}>
