@@ -1,10 +1,27 @@
+import { buildEntertainmentNode } from "./nighttimeEntertainment.js";
+
 /**
  * Wednesday's Mission Rail content — Epic Universe. Same shape as
- * mondayMission.js. Three broad phases: Super Nintendo World (plus
- * transportation intel, since getting to Epic Universe is its own small
- * logistics question) at open, the rest of the park at midday, then an
- * intentionally-open evening with no locked dinner plan.
+ * mondayMission.js, plus the same Phase 4 rail-rhythm additions Tuesday
+ * carries: PARK ENTRY, midday LUNCH / REFUEL, an afternoon phase, an
+ * optional nighttime-entertainment slot, a PARK CLOSE endpoint anchor, then
+ * an intentionally open dinner phase.
  */
+
+// The architecture supports an Epic Universe nighttime show/fireworks slot,
+// but Universal hasn't announced a regular one the way Disney has
+// Fantasmic — so this stays empty rather than guessing one exists. If a
+// confirmed October 21, 2026 show is ever announced, add it here and it
+// appears on the rail automatically.
+export const WEDNESDAY_NIGHTTIME_ENTERTAINMENT = [
+  // { title: "", time: "", type: "show", status: "confirmed", url: "" },
+];
+
+const epicNighttimeNode = buildEntertainmentNode(WEDNESDAY_NIGHTTIME_ENTERTAINMENT[0], {
+  id: "epic-nighttime-show",
+  tint: "#8a6fd1",
+});
+
 export const WEDNESDAY_MISSION = {
   id: "wednesday",
   missionNumber: "MISSION 03",
@@ -46,8 +63,21 @@ export const WEDNESDAY_MISSION = {
     },
     {
       kind: "flexible",
-      id: "daytime-operations",
-      heading: "CELESTIAL & WIZARDING OPERATIONS",
+      id: "lunch-refuel",
+      heading: "LUNCH / REFUEL",
+      tint: "#8a6fd1",
+      time: "12:00 PM",
+      blocks: [
+        {
+          type: "text",
+          text: "Not a reservation — a broad midday break. Eat somewhat before or after noon depending on waits, hunger, energy, and where the squad happens to be.",
+        },
+      ],
+    },
+    {
+      kind: "flexible",
+      id: "portal-operations",
+      heading: "PORTAL OPERATIONS",
       tint: "#8a6fd1",
       blocks: [
         {
@@ -98,12 +128,20 @@ export const WEDNESDAY_MISSION = {
         },
       ],
     },
+    epicNighttimeNode,
     {
-      kind: "flexible",
-      id: "evening-open-dinner",
-      heading: "EVENING OPERATIONS",
+      kind: "endpoint",
+      id: "epic-close",
+      heading: "EPIC UNIVERSE CLOSE",
       tint: "#4a3a6a",
       timeFromParkHours: true,
+      blocks: [{ type: "text", text: "Epic Universe mission complete for today." }],
+    },
+    {
+      kind: "flexible",
+      id: "dinner-options",
+      heading: "DINNER OPTIONS",
+      tint: "#4a3a6a",
       blocks: [
         {
           type: "text",
@@ -116,5 +154,5 @@ export const WEDNESDAY_MISSION = {
         },
       ],
     },
-  ],
+  ].filter(Boolean),
 };

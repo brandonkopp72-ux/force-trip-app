@@ -1,11 +1,27 @@
+import { buildEntertainmentNode } from "./nighttimeEntertainment.js";
+
 /**
  * Tuesday's Mission Rail content — Islands of Adventure. Follows the exact
  * shape mondayMission.js established (see its doc comment for the full node/
- * block contract); this file only adds day-specific content, no new
- * mechanics. Three broad phases, same as the "suggested rail structure" in
- * the Phase 4 brief: Hogsmeade first (before crowds build), the rest of the
- * park at midday, then CityWalk in the evening.
+ * block contract), plus the Phase 4 rail-rhythm additions every full park
+ * day now carries: a PARK ENTRY anchor, a midday LUNCH / REFUEL anchor, an
+ * afternoon phase, a PARK CLOSE anchor (an "endpoint" node, so its close
+ * time — read from parkHours.js — shows directly on the rail, not just in
+ * Operating Intel), and then the evening phase.
  */
+
+// Hogwarts Always — a real Universal nighttime projection show, but one
+// that doesn't run every night. Stays empty (renders nothing) until a
+// confirmed October 20, 2026 performance is actually on the calendar.
+export const TUESDAY_NIGHTTIME_ENTERTAINMENT = [
+  // { title: "HOGWARTS ALWAYS", time: "8:00 PM", type: "projection", status: "confirmed", url: "" },
+];
+
+const hogwartsAlwaysNode = buildEntertainmentNode(TUESDAY_NIGHTTIME_ENTERTAINMENT[0], {
+  id: "hogwarts-always",
+  tint: "#8a6fd1",
+});
+
 export const TUESDAY_MISSION = {
   id: "tuesday",
   missionNumber: "MISSION 02",
@@ -61,6 +77,19 @@ export const TUESDAY_MISSION = {
     },
     {
       kind: "flexible",
+      id: "lunch-refuel",
+      heading: "LUNCH / REFUEL",
+      tint: "#c9a24d",
+      time: "12:00 PM",
+      blocks: [
+        {
+          type: "text",
+          text: "Not a reservation — a broad midday break. Eat somewhat before or after noon depending on waits, hunger, energy, and where the squad happens to be.",
+        },
+      ],
+    },
+    {
+      kind: "flexible",
       id: "adventure-ops",
       heading: "ADVENTURE OPERATIONS",
       tint: "#c9a24d",
@@ -89,12 +118,20 @@ export const TUESDAY_MISSION = {
         },
       ],
     },
+    hogwartsAlwaysNode,
+    {
+      kind: "endpoint",
+      id: "islands-close",
+      heading: "ISLANDS MISSION ENDS",
+      tint: "#5a6a9a",
+      timeFromParkHours: true,
+      blocks: [{ type: "text", text: "Islands of Adventure mission complete for today — head for CityWalk." }],
+    },
     {
       kind: "flexible",
       id: "citywalk-evening",
-      heading: "EVENING + CITYWALK",
+      heading: "CITYWALK EVENING",
       tint: "#5a4a7a",
-      timeFromParkHours: true,
       blocks: [
         {
           type: "diningConsensus",
@@ -114,5 +151,5 @@ export const TUESDAY_MISSION = {
         },
       ],
     },
-  ],
+  ].filter(Boolean),
 };

@@ -3,12 +3,15 @@ import { getVotableItemById } from "../data/parks.js";
 import { getParkHours, formatEveningWindow } from "../data/parkHours.js";
 import { rankItemsByPositiveVotes, getDiningConsensusRanking, buildFridayReadiness } from "./tripStats.js";
 import { FLIGHT_ITINERARIES } from "../data/flights.js";
-import { TUESDAY_MISSION } from "../data/tuesdayMission.js";
-import { WEDNESDAY_MISSION } from "../data/wednesdayMission.js";
-import { THURSDAY_MISSION, AVA_BIRTHDAY, buildAvaBirthdayNode } from "../data/thursdayMission.js";
+import { buildEntertainmentNode } from "../data/nighttimeEntertainment.js";
+import { MONDAY_MISSION, MONDAY_NIGHTTIME_ENTERTAINMENT } from "../data/mondayMission.js";
+import { TUESDAY_MISSION, TUESDAY_NIGHTTIME_ENTERTAINMENT } from "../data/tuesdayMission.js";
+import { WEDNESDAY_MISSION, WEDNESDAY_NIGHTTIME_ENTERTAINMENT } from "../data/wednesdayMission.js";
+import { THURSDAY_MISSION, THURSDAY_HHN_ENTERTAINMENT, AVA_BIRTHDAY, buildAvaBirthdayNode } from "../data/thursdayMission.js";
 import { FRIDAY_MISSION } from "../data/fridayMission.js";
 
 const ALL_PHASE4_MISSIONS = [TUESDAY_MISSION, WEDNESDAY_MISSION, THURSDAY_MISSION, FRIDAY_MISSION];
+const FULL_PARK_DAYS = [TUESDAY_MISSION, WEDNESDAY_MISSION, THURSDAY_MISSION]; // Friday isn't a full park day
 
 function collectItemIds(mission, blockTypes) {
   const ids = [];
@@ -52,11 +55,21 @@ describe("Phase 4 (Tuesday-Friday) data integrity", () => {
         });
       });
 
-      it("every flexible node has a non-empty blocks array; every hard node has a time and no blocks", () => {
+      it("every flexible/endpoint node has a blocks array; every hard node has a time", () => {
         mission.rail.forEach((node) => {
           if (node.kind === "hard") {
             expect(node.time, `hard node "${node.id}" should carry a time`).toBeTruthy();
-            expect(node.blocks).toBeUndefined();
+            // Hard nodes MAY carry an additional blocks array now (e.g.
+            // Friday's departure nodes attach a flightPair) — just make sure
+            // it's a real array when present, not asserting it's absent.
+            if (node.blocks !== undefined) {
+              expect(Array.isArray(node.blocks)).toBe(true);
+            }
+          } else if (node.kind === "entertainment") {
+            // Entertainment nodes render fine with no blocks at all.
+            if (node.blocks !== undefined) {
+              expect(Array.isArray(node.blocks)).toBe(true);
+            }
           } else {
             expect(Array.isArray(node.blocks), `node "${node.id}" should have a blocks array`).toBe(true);
             expect(node.blocks.length).toBeGreaterThan(0);
@@ -79,12 +92,111 @@ describe("Phase 4 (Tuesday-Friday) data integrity", () => {
     });
   });
 
-  it("Thursday's secondary Operating Intel points at a real HHN parkHours entry", () => {
+  FULL_PARK_DAYS.forEach((mission) => {
+    describe(`${mission.id} full-park-day rail rhythm`, () => {
+      it("has a midday LUNCH / REFUEL anchor at 12:00 PM, not a reservation", () => {
+        const lunch = mission.rail.find((n) => n.id === "lunch-refuel");
+        expect(lunch, `expected a lunch-refuel node on "${mission.id}"`).toBeTruthy();
+        expect(lunch.time).toBe("12:00 PM");
+        expect(lunch.kind).toBe("flexible"); // never a pulsing/locked node
+      });
+
+      it("has at least one endpoint (PARK CLOSE-style) anchor sourced from parkHours.js", () => {
+        const endpoints = mission.rail.filter((n) => n.kind === "endpoint");
+        expect(endpoints.length, `expected an endpoint node on "${mission.id}"`).toBeGreaterThan(0);
+        endpoints.forEach((node) => {
+          const usesPrimary = node.timeFromParkHours === true || node.timeFromParkHours === "close";
+          const usesSecondary = node.timeFromSecondaryParkHours === true || node.timeFromSecondaryParkHours === "close";
+          expect(usesPrimary || usesSecondary, `endpoint "${node.id}" should read its time from config, not a literal string`).toBe(true);
+        });
+      });
+    });
+  });
+
+  it("Thursday's HHN-anchored nodes read time from HHN's OWN parkHours entry, not USF's", () => {
     const secondary = THURSDAY_MISSION.secondaryOperatingIntel;
     expect(secondary).toBeTruthy();
+    expect(secondary.parkId).toBe("hhn");
+
+    const hhnStart = THURSDAY_MISSION.rail.find((n) => n.id === "hhn-start");
+    expect(hhnStart.timeFromSecondaryParkHours).toBe("open");
+
+    const hhnClose = THURSDAY_MISSION.rail.find((n) => n.id === "hhn-close");
+    expect(hhnClose.kind).toBe("endpoint");
+    expect(hhnClose.timeFromSecondaryParkHours).toBe(true);
+
     const hhnHours = getParkHours(secondary.parkId);
-    expect(hhnHours).not.toBeNull();
-    expect(hhnHours.earlyAccess).toBeTruthy();
+    expect(hhnHours.open).toBeTruthy();
+    expect(hhnHours.close).toBeTruthy();
+  });
+
+  it("Thursday's Ava's Birthday node sits after the USF daytime-close endpoint and before HHN start", () => {
+    const ids = THURSDAY_MISSION.rail.map((n) => n.id);
+    const closeIdx = ids.indexOf("usf-daytime-close");
+    const birthdayIdx = ids.indexOf("ava-birthday");
+    const hhnIdx = ids.indexOf("hhn-start");
+    expect(closeIdx).toBeGreaterThanOrEqual(0);
+    expect(birthdayIdx).toBeGreaterThan(closeIdx);
+    expect(hhnIdx).toBeGreaterThan(birthdayIdx);
+  });
+
+  it("Friday's two departure flights are separate hard nodes in chronological (boarding) order", () => {
+    const justin = FRIDAY_MISSION.rail.find((n) => n.id === "justin-departs");
+    const mainSquad = FRIDAY_MISSION.rail.find((n) => n.id === "main-squad-departs");
+    expect(justin.kind).toBe("hard");
+    expect(mainSquad.kind).toBe("hard");
+    expect(justin.time).toBe("5:25 PM");
+    expect(mainSquad.time).toBe("6:30 PM");
+    expect(FRIDAY_MISSION.rail.indexOf(justin)).toBeLessThan(FRIDAY_MISSION.rail.indexOf(mainSquad));
+    expect(justin.blocks[0]).toEqual({ type: "flightPair", flightIds: ["justin"], leg: "return" });
+    expect(mainSquad.blocks[0]).toEqual({ type: "flightPair", flightIds: ["main-squad"], leg: "return" });
+  });
+});
+
+describe("buildEntertainmentNode", () => {
+  it("returns null when there is no entry at all", () => {
+    expect(buildEntertainmentNode(undefined, { id: "x", tint: "#fff" })).toBeNull();
+  });
+
+  it("returns null for a tentative or notScheduled entry, even with a time", () => {
+    expect(buildEntertainmentNode({ title: "X", time: "8:00 PM", status: "tentative" }, { id: "x", tint: "#fff" })).toBeNull();
+    expect(buildEntertainmentNode({ title: "X", time: "8:00 PM", status: "notScheduled" }, { id: "x", tint: "#fff" })).toBeNull();
+  });
+
+  it("returns null for a confirmed entry with no time (never invents one)", () => {
+    expect(buildEntertainmentNode({ title: "X", status: "confirmed" }, { id: "x", tint: "#fff" })).toBeNull();
+  });
+
+  it("builds a real entertainment node for a confirmed entry with a time", () => {
+    const node = buildEntertainmentNode(
+      { title: "FANTASMIC!", time: "8:00 PM", type: "show", status: "confirmed", url: "https://example.com" },
+      { id: "fantasmic", tint: "#5a6a9a" }
+    );
+    expect(node).toEqual({
+      kind: "entertainment",
+      id: "fantasmic",
+      heading: "FANTASMIC!",
+      time: "8:00 PM",
+      tint: "#5a6a9a",
+      entertainmentType: "show",
+      url: "https://example.com",
+    });
+  });
+});
+
+describe("Nighttime entertainment stays off by default", () => {
+  it("Monday, Tuesday, Wednesday, and Thursday's HHN config all start with nothing confirmed", () => {
+    [MONDAY_NIGHTTIME_ENTERTAINMENT, TUESDAY_NIGHTTIME_ENTERTAINMENT, WEDNESDAY_NIGHTTIME_ENTERTAINMENT, THURSDAY_HHN_ENTERTAINMENT].forEach(
+      (entries) => {
+        expect(entries.every((e) => e.status !== "confirmed")).toBe(true);
+      }
+    );
+  });
+
+  it("no mission's rail currently contains an entertainment node (nothing is confirmed yet)", () => {
+    [MONDAY_MISSION, ...ALL_PHASE4_MISSIONS].forEach((mission) => {
+      expect(mission.rail.some((n) => n.kind === "entertainment")).toBe(false);
+    });
   });
 });
 
@@ -144,5 +256,18 @@ describe("Ava's Birthday conditional node", () => {
 describe("formatEveningWindow with a non-clock close value (HHN's 'Past Midnight')", () => {
   it("joins start and close as written when close has no meridiem to dedupe", () => {
     expect(formatEveningWindow("6:30 PM", "Past Midnight")).toBe("6:30 PM–Past Midnight");
+  });
+});
+
+describe("Monday stays unchanged by default (nighttime-entertainment exception is additive-only)", () => {
+  it("still carries exactly its original six rail nodes when Fantasmic isn't confirmed", () => {
+    expect(MONDAY_MISSION.rail.map((n) => n.id)).toEqual([
+      "depart-for-airport",
+      "deployment",
+      "rendezvous",
+      "batuu-ops",
+      "ogas",
+      "evening-ops",
+    ]);
   });
 });

@@ -1,3 +1,5 @@
+import { buildEntertainmentNode } from "./nighttimeEntertainment.js";
+
 /**
  * Monday's Mission Rail content. This is the template Tuesday-Friday will
  * follow in Phase 4, so the shape here matters more than it would for a
@@ -58,6 +60,24 @@
  * night by Evening Operations) without a single page-spanning background
  * effect or any scroll-jacking.
  */
+
+// The ONE piece of Monday allowed to change in Phase 4 (per the superseding
+// Phase 4 spec's nighttime-entertainment exception): a real, confirmed
+// Fantasmic! showtime, once Disney publishes one for October 19, 2026. Until
+// then this stays empty and buildEntertainmentNode() below refuses to
+// produce a node at all — Monday's rail stays exactly the same six nodes it
+// already had. If multiple performances are ever confirmed for the night,
+// list them all here, but by default only the first entry is surfaced (the
+// one we intend to target), per spec.
+export const MONDAY_NIGHTTIME_ENTERTAINMENT = [
+  // { title: "FANTASMIC!", time: "8:00 PM", type: "show", status: "confirmed", url: "" },
+];
+
+const fantasmicNode = buildEntertainmentNode(MONDAY_NIGHTTIME_ENTERTAINMENT[0], {
+  id: "fantasmic",
+  tint: "#5a6a9a",
+});
+
 export const MONDAY_MISSION = {
   id: "monday",
   missionNumber: "MISSION 01",
@@ -222,5 +242,9 @@ export const MONDAY_MISSION = {
         },
       ],
     },
-  ],
+    // Only appears once a real showtime is confirmed above — see
+    // MONDAY_NIGHTTIME_ENTERTAINMENT. Filtered out entirely by default, so
+    // the six-node rail above is exactly what Phase 3 shipped.
+    fantasmicNode,
+  ].filter(Boolean),
 };

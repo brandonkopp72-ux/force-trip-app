@@ -1,17 +1,20 @@
+import { buildEntertainmentNode } from "./nighttimeEntertainment.js";
+
 /**
  * Thursday's Mission Rail content — Universal Studios Florida by day, Ava's
  * Birthday at dinner, then Halloween Horror Nights that night. Same node/
- * block contract as mondayMission.js. The one truly new piece of machinery
- * here is the Ava's Birthday node builder below — everything else (dual
- * Operating Intel via `secondaryOperatingIntel`, the new block types) is
- * Phase 4 infrastructure built in MissionDayPage.jsx / RailBlocks.jsx and
- * just consumed here.
+ * block contract as mondayMission.js, but this is the most time-structured
+ * day per the Phase 4 spec: USF entry, midday lunch, an afternoon phase, a
+ * distinct "day mission ends" close anchor for USF's daytime hours, Ava's
+ * Birthday, then a second operating context (HHN) with its OWN start and
+ * close anchors, each sourced from HHN's own parkHours.js entry via
+ * `timeFromSecondaryParkHours` rather than USF's.
  *
- * Tint intentionally warms from a brighter Universal-daytime blue/orange
- * through Diagon Alley's gold, then cools into HHN's deep red/black — the
- * page "gradually darkens" the same way Monday's tint evolves, purely
- * through each node's own tint plus MissionRail's existing connecting-line
- * gradient. No scroll-driven effects, nothing scroll-jacked.
+ * Tint intentionally warms from a brighter Universal-daytime blue through
+ * Diagon Alley's gold, then cools into HHN's deep red/black — the page
+ * "gradually darkens" the same way Monday's tint evolves, purely through
+ * each node's own tint plus MissionRail's existing connecting-line gradient.
+ * No scroll-driven effects, nothing scroll-jacked.
  */
 
 // Ava's birthday dinner restaurant/time — set both once the reservation is
@@ -54,7 +57,7 @@ export function buildAvaBirthdayNode(config = AVA_BIRTHDAY) {
     heading: "AVA'S BIRTHDAY",
     tint: "#ff6b57",
     blocks: [
-      { type: "highlight", label: "THURSDAY", value: "October 22" },
+      { type: "highlight", label: "THURSDAY · OCTOBER 22", value: "Birthday dinner — guaranteed, details TBD" },
       {
         type: "text",
         text: "Birthday dinner is guaranteed to happen tonight — the restaurant and time are still being finalized. This card automatically switches to a locked reservation display, matching Oga's Cantina's treatment on Monday, the moment they're booked.",
@@ -62,6 +65,19 @@ export function buildAvaBirthdayNode(config = AVA_BIRTHDAY) {
     ],
   };
 }
+
+// HHN's own live-entertainment slot (a specific stage/lagoon show with a
+// published starting time) is a DIFFERENT thing from the vote-ranked house/
+// show list below — this is for an actual scheduled performance time, once
+// Universal publishes one for October 22, 2026. Stays empty until then.
+export const THURSDAY_HHN_ENTERTAINMENT = [
+  // { title: "STRANGER THINGS: RETURN TO HAWKINS", time: "9:15 PM", type: "liveEntertainment", status: "confirmed", url: "" },
+];
+
+const hhnEntertainmentNode = buildEntertainmentNode(THURSDAY_HHN_ENTERTAINMENT[0], {
+  id: "hhn-entertainment",
+  tint: "#7a1f1f",
+});
 
 export const THURSDAY_MISSION = {
   id: "thursday",
@@ -90,7 +106,7 @@ export const THURSDAY_MISSION = {
       blocks: [
         {
           type: "text",
-          text: "Regular park hours end mid-afternoon today so the park can turn over for Halloween Horror Nights tonight — see the second Operating Intel strip above. Order below reflects the squad's current votes.",
+          text: "Regular park hours end mid-afternoon today so the park can turn over for Halloween Horror Nights tonight. Order below reflects the squad's current votes.",
         },
         {
           type: "rankedAttractionRefs",
@@ -105,6 +121,19 @@ export const THURSDAY_MISSION = {
             "usf-meninblack",
             "usf-et",
           ],
+        },
+      ],
+    },
+    {
+      kind: "flexible",
+      id: "lunch-refuel",
+      heading: "LUNCH / REFUEL",
+      tint: "#3f7fd9",
+      time: "12:00 PM",
+      blocks: [
+        {
+          type: "text",
+          text: "Not a reservation — a broad midday break. Eat somewhat before or after noon depending on waits, hunger, energy, and where the squad happens to be.",
         },
       ],
     },
@@ -136,12 +165,21 @@ export const THURSDAY_MISSION = {
         },
       ],
     },
+    {
+      kind: "endpoint",
+      id: "usf-daytime-close",
+      heading: "DAY MISSION ENDS",
+      tint: "#c9866a",
+      timeFromParkHours: true,
+      blocks: [{ type: "text", text: "Universal Studios' daytime mission ends here — regroup before Halloween Horror Nights takes over the same park tonight." }],
+    },
     buildAvaBirthdayNode(),
     {
       kind: "flexible",
-      id: "hhn-priorities",
+      id: "hhn-start",
       heading: "HALLOWEEN HORROR NIGHTS",
-      tint: "#4a1414",
+      tint: "#7a1f1f",
+      timeFromSecondaryParkHours: "open",
       blocks: [
         {
           type: "text",
@@ -188,5 +226,14 @@ export const THURSDAY_MISSION = {
         },
       ],
     },
-  ],
+    hhnEntertainmentNode,
+    {
+      kind: "endpoint",
+      id: "hhn-close",
+      heading: "NIGHT OPERATIONS END",
+      tint: "#2a0f0f",
+      timeFromSecondaryParkHours: true,
+      blocks: [{ type: "text", text: "Halloween Horror Nights wraps up here — back to Dockside." }],
+    },
+  ].filter(Boolean),
 };

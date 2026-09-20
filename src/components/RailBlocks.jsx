@@ -474,6 +474,40 @@ export function HardNodeContent({ node }) {
 }
 
 /**
+ * The content for an "entertainment" rail node (a nighttime show/fireworks/
+ * projection/live-entertainment slot built via buildEntertainmentNode — see
+ * data/nighttimeEntertainment.js). Deliberately simple and NOT styled like
+ * HardNodeContent's locked-amber reservation card: attending a show isn't a
+ * commitment the way a dinner reservation is, so this stays a quieter card
+ * with just the entertainment type and an optional link, in the node's own
+ * tint rather than a fixed locked color.
+ */
+export function EntertainmentNodeContent({ node }) {
+  const tint = node.tint || "#d9c9ff";
+  return (
+    <div
+      style={{
+        background: `linear-gradient(160deg, ${tint}14, rgba(16,24,44,0.4))`,
+        border: `1px solid ${tint}4d`,
+        borderRadius: 14,
+        padding: "14px 16px",
+      }}
+    >
+      {node.entertainmentType && (
+        <div style={{ ...labelText, color: tint, marginBottom: node.url ? 8 : 0 }}>
+          {node.entertainmentType.replace(/([A-Z])/g, " $1").toUpperCase().trim()}
+        </div>
+      )}
+      {node.url && (
+        <a href={node.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, color: "#8fb3ff", textDecoration: "none" }}>
+          More info ↗
+        </a>
+      )}
+    </div>
+  );
+}
+
+/**
  * Resolves one Mission Rail content block to JSX. The original eight block
  * types (see mondayMission.js) came from Monday alone; Phase 4 added three
  * more — "rankedAttractionRefs" (live vote-sorted attraction list),

@@ -4,18 +4,33 @@ import { useReducedMotion } from "../hooks/useReducedMotion.js";
  * The reusable visual scaffold for a Mission Day page: a time column, a
  * continuous vertical rail, and a content column — in that order — with
  * one row per node. This component knows nothing about Monday, Batuu,
- * flights, or votes — it only knows three node kinds ("flexible" / "hard" /
- * "endpoint") and renders whatever `content` JSX each node hands it. That's
- * what lets Tuesday-Friday reuse this exact component in Phase 4 with their
- * own nodes.
+ * flights, or votes — it only knows four node kinds ("flexible" / "hard" /
+ * "endpoint" / "entertainment") and renders whatever `content` JSX each node
+ * hands it. That's what lets Tuesday-Friday reuse this exact component in
+ * Phase 4 with their own nodes.
  *
- * Each node: { id, kind: "flexible" | "hard" | "endpoint", heading, tint, content, time? }
- * - kind "flexible" → small, non-pulsing dot marker. Standard rail node,
- *                      used both for untimed nodes and plain time anchors.
- * - kind "hard"     → larger marker with a slow, subtle glow pulse — a
- *                      locked reservation.
- * - kind "endpoint" → a hollow ring marker, no pulse — the day's close/end.
- * - tint            → a small accent color: colors that node's marker,
+ * Each node: { id, kind: "flexible" | "hard" | "endpoint" | "entertainment", heading, tint, content, time? }
+ * - kind "flexible"     → small, non-pulsing dot marker. Standard rail node,
+ *                          used both for untimed nodes and plain time anchors.
+ * - kind "hard"         → larger marker with a slow, subtle glow pulse — a
+ *                          locked reservation or other genuine fixed
+ *                          commitment (a reservation, or a flight "when
+ *                          appropriate").
+ * - kind "endpoint"     → a hollow ring marker, no pulse — the day's
+ *                          close/end (a "PARK CLOSE"-style anchor).
+ * - kind "entertainment" → a small star-glyph marker with a steady (non-
+ *                          pulsing) glow — visually distinctive enough to
+ *                          notice, but deliberately NOT the locked/pulsing
+ *                          treatment, since attending isn't a commitment the
+ *                          way a reservation is. Used for a nighttime show/
+ *                          fireworks/projection/live-entertainment node built
+ *                          from a day's nighttimeEntertainment config via
+ *                          buildEntertainmentNode() (see
+ *                          data/nighttimeEntertainment.js) — that helper
+ *                          already refuses to produce a node at all unless a
+ *                          real confirmed time exists, so this component
+ *                          never has to guess.
+ * - tint                → a small accent color: colors that node's marker,
  *                      the rail segment below it, and a very soft
  *                      background wash behind its heading — this is what
  *                      lets the page "subtly evolve while scrolling"
@@ -60,6 +75,7 @@ const TIME_LABEL_BASE = {
 
 function timeLabelColor(node) {
   if (node.kind === "hard") return "#ffd9ad"; // locked reservation — accent amber
+  if (node.kind === "entertainment") return "#d9c9ff"; // show/entertainment — soft starlight lavender
   if (typeof node.time === "string" && node.time.trim().startsWith("~")) return "#a9b4cc"; // approximate — softer
   return "#dbe9ff"; // plain known clock time — bright/neutral
 }
@@ -116,6 +132,32 @@ function RailMarker({ kind, tint, reduced }) {
           marginTop: 2,
         }}
       />
+    );
+  }
+
+  if (kind === "entertainment") {
+    // A small star glyph with a STEADY glow — deliberately not the
+    // "hard" node's animated pulse, per the spec's "visually distinctive
+    // enough to notice, but NOT a locked/pulsing reservation node."
+    return (
+      <span
+        aria-hidden="true"
+        style={{
+          width: 16,
+          height: 16,
+          flexShrink: 0,
+          marginTop: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 13,
+          lineHeight: 1,
+          color,
+          textShadow: `0 0 6px ${color}, 0 0 12px ${color}99`,
+        }}
+      >
+        ✦
+      </span>
     );
   }
 

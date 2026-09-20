@@ -1,5 +1,5 @@
 import { getParkHours, formatEveningWindow } from "../data/parkHours.js";
-import { RailBlock, HardNodeContent } from "./RailBlocks.jsx";
+import { RailBlock, HardNodeContent, EntertainmentNodeContent } from "./RailBlocks.jsx";
 import { MissionRail } from "./MissionRail.jsx";
 
 /**
@@ -14,18 +14,33 @@ import { MissionRail } from "./MissionRail.jsx";
  *      Halloween Horror Nights that evening). Monday never sets that field,
  *      so its render path — and output — is unchanged from Phase 3.
  *   3. maps `mission.rail` into MissionRail's node shape, building each
- *      node's `content` via RailBlock (flexible/endpoint nodes' blocks) or
- *      HardNodeContent (a hard node's fixed fields) — MissionRail itself
- *      never sees mission-specific data, only the resulting JSX. A node
- *      flagged `timeFromParkHours: true` (or `"close"`) gets its displayed
- *      time substituted here from parkHours.js's close value at render
- *      time; `timeFromParkHours: "open"` substitutes the open value instead
- *      (added in Phase 4 for days that anchor a node to park opening rather
- *      than closing — Monday never uses this flag at all, so it's
- *      unaffected either way). One flagged `rangeEndFromParkHours` instead
- *      keeps its own literal start time and appends that same close time as
- *      a range (e.g. "5:00–9:00 PM") — either way, the real open/close time
- *      only ever needs updating in parkHours.js.
+ *      node's `content`:
+ *        - "hard" and "entertainment" nodes get their fixed-shape renderer
+ *          (HardNodeContent / EntertainmentNodeContent) plus, if the node
+ *          ALSO carries a `blocks` array, those blocks rendered underneath
+ *          it (e.g. Friday's departure nodes are "hard" nodes that attach a
+ *          flightPair block for the actual flight card — Oga's Cantina on
+ *          Monday has no `blocks` at all, so nothing extra renders there,
+ *          unchanged from Phase 3).
+ *        - every other kind ("flexible"/"endpoint") renders its `blocks`
+ *          array the same way Phase 3 always did.
+ *      MissionRail itself never sees mission-specific data, only the
+ *      resulting JSX.
+ *
+ *      Time resolution for a node (in order checked):
+ *        - `timeFromParkHours: "open"` / `"close"` (or `true`, meaning
+ *          close) → substituted from parkHours.js for `mission.parkId`.
+ *        - `timeFromSecondaryParkHours: "open"` / `"close"` (or `true`) →
+ *          same, but from `mission.secondaryOperatingIntel.parkId` instead
+ *          (Thursday's HHN-anchored nodes use this to read HHN's own hours
+ *          rather than USF's).
+ *        - `rangeEndFromParkHours: true` → keeps the node's own literal
+ *          start time and appends the (primary) park's close time as a
+ *          range (e.g. "5:00–9:00 PM").
+ *        - otherwise, the node's own literal `time`.
+ *      Monday never sets any of the newer flags, so its output is
+ *      unaffected either way — the real open/close time only ever needs
+ *      updating in parkHours.js, never here or in a mission file.
  *
  * Tuesday-Friday reuse this component with their own day configs. `topPicks`
  * is additive (Phase 4) — it's only read by the "diningConsensus" block type
@@ -41,7 +56,22 @@ export function MissionDayPage({ mission, votesByItem, topPicks, onBack }) {
     let time = node.time;
     if (node.timeFromParkHours === "open") time = hours?.open;
     else if (node.timeFromParkHours) time = hours?.close;
+    else if (node.timeFromSecondaryParkHours === "open") time = secondaryHours?.open;
+    else if (node.timeFromSecondaryParkHours) time = secondaryHours?.close;
     else if (node.rangeEndFromParkHours && hours?.close) time = formatEveningWindow(node.time, hours.close);
+
+    const extraBlocks = (node.blocks || []).map((block, i) => (
+      <RailBlock key={i} block={block} votesByItem={votesByItem} topPicks={topPicks} />
+    ));
+
+    let content;
+    if (node.kind === "hard") {
+      content = [<HardNodeContent key="fixed" node={node} />, ...extraBlocks];
+    } else if (node.kind === "entertainment") {
+      content = [<EntertainmentNodeContent key="fixed" node={node} />, ...extraBlocks];
+    } else {
+      content = extraBlocks;
+    }
 
     return {
       id: node.id,
@@ -49,12 +79,7 @@ export function MissionDayPage({ mission, votesByItem, topPicks, onBack }) {
       heading: node.heading,
       tint: node.tint,
       time,
-      content:
-        node.kind === "hard" ? (
-          <HardNodeContent node={node} />
-        ) : (
-          node.blocks.map((block, i) => <RailBlock key={i} block={block} votesByItem={votesByItem} topPicks={topPicks} />)
-        ),
+      content,
     };
   });
 
